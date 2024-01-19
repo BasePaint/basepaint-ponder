@@ -1,5 +1,5 @@
 import { createConfig } from "@ponder/core";
-import { http } from "viem";
+import { fallback, http } from "viem";
 
 import { BasePaintBrushAbi } from "./abis/BasePaintBrushAbi";
 import { BasePaintAbi } from "./abis/BasePaintAbi";
@@ -8,7 +8,11 @@ export default createConfig({
   networks: {
     base: {
       chainId: 8453,
-      transport: http(process.env.PONDER_RPC_URL_8453),
+      transport: fallback(
+        process.env
+          .PONDER_RPC_URLS_8453!.split(",")
+          .map((url) => http(url.trim()))
+      ),
     },
   },
   contracts: {
