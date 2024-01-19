@@ -85,12 +85,6 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
   const canvas = await Canvas.findUnique({ id: Number(event.args.day) });
   const pixelsContributed = Math.floor((event.args.pixels.length - 2) / 6);
 
-  await Canvas.upsert({
-    id: day,
-    create: { totalMints: 0, totalEarned: 0n, pixelsCount: pixelsContributed },
-    update: { pixelsCount: (canvas?.pixelsCount ?? 0) + pixelsContributed },
-  });
-
   const brush = await Brush.findUnique({ id: Number(event.args.tokenId) });
   if (brush) {
     let streak = brush.streak;
@@ -117,6 +111,7 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
   }
 
   const contributionId = `${event.args.day}_${event.args.author}`;
+  const contribution = await Contribution.findUnique({ id: contributionId });
   await Contribution.upsert({
     id: contributionId,
     create: {
@@ -127,6 +122,23 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
     update: ({ current }) => ({
       pixelsCount: current.pixelsCount + pixelsContributed,
     }),
+  });
+
+  await Canvas.upsert({
+    id: day,
+    create: {
+      totalMints: 0,
+      totalEarned: 0n,
+      pixelsCount: pixelsContributed,
+      totalArtists: 1,
+    },
+    update: {
+      pixelsCount: (canvas?.pixelsCount ?? 0) + pixelsContributed,
+      totalArtists:
+        contribution === null
+          ? (canvas?.totalArtists ?? 0) + 1
+          : canvas?.totalArtists,
+    },
   });
 
   const usageId = `${event.args.day}_${event.args.tokenId}`;

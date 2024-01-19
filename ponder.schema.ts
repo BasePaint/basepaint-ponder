@@ -81,6 +81,7 @@ export default createSchema((p) => ({
     id: p.int(),
     totalMints: p.int(),
     totalEarned: p.bigint(),
+    totalArtists: p.int(),
     pixelsCount: p.int(),
 
     contributions: p.many("Contribution.canvasId"),
