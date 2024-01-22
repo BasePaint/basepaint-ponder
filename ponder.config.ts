@@ -15,6 +15,9 @@ export default createConfig({
       ),
     },
   },
+  options: {
+    maxHealthcheckDuration: 1,
+  },
   contracts: {
     BasePaintBrush: {
       abi: BasePaintBrushAbi,
