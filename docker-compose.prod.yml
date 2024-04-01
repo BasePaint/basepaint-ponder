@@ -20,7 +20,7 @@ services:
         max-size: "100M"
 
   ponder:
-    image: ghcr.io/w1nt3r-eth/basepaint-ponder:${GITHUB_SHA:-latest}
+    image: ghcr.io/basepaint/basepaint-ponder:${GITHUB_SHA:-latest}
     container_name: ponder
     restart: unless-stopped
     environment:
