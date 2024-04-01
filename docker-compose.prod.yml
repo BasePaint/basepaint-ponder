@@ -14,13 +14,33 @@ services:
       - postgres-data:/var/lib/postgresql/data
     ports:
       - 5432:5432
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100M"
 
   ponder:
-    build: .
+    image: ghcr.io/w1nt3r-eth/basepaint-ponder:${GITHUB_SHA:-latest}
     container_name: ponder
     restart: unless-stopped
     environment:
       - PONDER_RPC_URLS_8453
       - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/basepaint_ponder
     ports:
-      - 42069:42069
+      - "127.0.0.1:42069:42069"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100M"
+
+  dozzle:
+    container_name: dozzle
+    image: amir20/dozzle:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "127.0.0.1:9999:8080"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100M"
