@@ -1,54 +1,5 @@
 import { ponder } from "@/generated";
 
-function patchForPerfDebugging() {
-  const totals: { [name: string]: { calledTimes: number; totalMs: number } } =
-    {};
-
-  function printStats() {
-    for (const [name, { calledTimes, totalMs }] of Object.entries(totals)) {
-      console.log(
-        `${name}: ${calledTimes} times, ${totalMs}ms total, ${
-          totalMs / calledTimes
-        }ms avg`
-      );
-    }
-  }
-
-  process.on("SIGINT", () => {
-    printStats();
-    process.exit(0);
-  });
-
-  let events = 0;
-
-  const originalOn = ponder.on;
-  ponder.on = (name: any, fn: any) => {
-    console.log("wrapHandlerFunction", name);
-    originalOn.call(ponder, name, async ({ event, context }: any) => {
-      try {
-        const start = Date.now();
-        const res = await fn({ event, context });
-        const end = Date.now();
-        const duration = end - start;
-        // console.log(`Handled event: ${name} (${duration}ms)`);
-        totals[name] ||= { calledTimes: 0, totalMs: 0 };
-        totals[name]!.calledTimes += 1;
-        totals[name]!.totalMs += duration;
-
-        events += 1;
-        if (events % 1_000 === 0) {
-          printStats();
-        }
-        return res;
-      } catch (err) {
-        console.error(err);
-      }
-    });
-  };
-}
-
-patchForPerfDebugging();
-
 ponder.on("BasePaint:setup", async ({ context }) => {
   const { Global } = context.db;
 
