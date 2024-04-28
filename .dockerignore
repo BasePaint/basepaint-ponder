@@ -2,3 +2,5 @@ node_modules/
 .ponder/
 generated/
 .env*
+docker-compose*
+.github
