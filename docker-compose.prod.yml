@@ -4,7 +4,6 @@ volumes:
 services:
   postgres:
     image: postgres
-    container_name: postgres
     restart: unless-stopped
     environment:
       - POSTGRES_USER=postgres
@@ -21,7 +20,6 @@ services:
 
   ponder_indexer:
     image: ghcr.io/basepaint/basepaint-ponder:${GITHUB_SHA:-latest}
-    container_name: ponder
     restart: unless-stopped
     environment:
       - PONDER_RPC_URLS_8453
@@ -34,7 +32,6 @@ services:
 
   ponder_server:
     image: ghcr.io/basepaint/basepaint-ponder:${GITHUB_SHA:-latest}
-    container_name: ponder
     restart: unless-stopped
     command: npm run serve
     environment:
@@ -49,7 +46,6 @@ services:
         max-size: "100M"
 
   dozzle:
-    container_name: dozzle
     image: amir20/dozzle:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
