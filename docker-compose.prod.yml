@@ -19,13 +19,28 @@ services:
       options:
         max-size: "100M"
 
-  ponder:
+  ponder_indexer:
     image: ghcr.io/basepaint/basepaint-ponder:${GITHUB_SHA:-latest}
     container_name: ponder
     restart: unless-stopped
     environment:
       - PONDER_RPC_URLS_8453
       - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/basepaint_ponder
+      - NODE_OPTIONS=--max_old_space_size=4096
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100M"
+
+  ponder_server:
+    image: ghcr.io/basepaint/basepaint-ponder:${GITHUB_SHA:-latest}
+    container_name: ponder
+    restart: unless-stopped
+    command: npm run serve
+    environment:
+      - PONDER_RPC_URLS_8453
+      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/basepaint_ponder
+      - NODE_OPTIONS=--max_old_space_size=4096
     ports:
       - "127.0.0.1:42069:42069"
     logging:

@@ -18,6 +18,10 @@ export default createConfig({
   options: {
     maxHealthcheckDuration: 1,
   },
+  database: {
+    publishSchema: "server",
+    kind: "postgres",
+  },
   contracts: {
     BasePaintBrush: {
       abi: BasePaintBrushAbi,
