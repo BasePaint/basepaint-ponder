@@ -19,7 +19,8 @@ export default createConfig({
     maxHealthcheckDuration: 1,
   },
   database: {
-    publishSchema: "server",
+    schema: process.env.GITHUB_SHA?.substring(0, 7) ?? "local",
+    publishSchema: "public",
     kind: "postgres",
   },
   contracts: {
