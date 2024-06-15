@@ -43,10 +43,7 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
     if (brush.lastUsedDay === Number(event.args.day) - 1) {
       streak += 1;
     }
-    if (
-      brush.lastUsedDay == null ||
-      brush.lastUsedDay < Number(event.args.day) - 1
-    ) {
+    if (brush.lastUsedDay == null || brush.lastUsedDay < Number(event.args.day) - 1) {
       streak = 1;
     }
 
@@ -85,10 +82,7 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
     },
     update: {
       pixelsCount: (canvas?.pixelsCount ?? 0) + pixelsContributed,
-      totalArtists:
-        contribution === null
-          ? (canvas?.totalArtists ?? 0) + 1
-          : canvas?.totalArtists,
+      totalArtists: contribution === null ? (canvas?.totalArtists ?? 0) + 1 : canvas?.totalArtists,
     },
   });
 

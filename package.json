@@ -11,6 +11,9 @@
     "lint": "eslint .",
     "typecheck": "tsc"
   },
+  "prettier": {
+    "printWidth": 120
+  },
   "dependencies": {
     "@ponder/core": "^0.4.38",
     "viem": "^1.19.3"
