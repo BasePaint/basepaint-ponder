@@ -9,19 +9,13 @@ export default createConfig({
   networks: {
     base: {
       chainId: 8453,
-      transport: fallback(
-        process.env
-          .PONDER_RPC_URLS_8453!.split(",")
-          .map((url) => http(url.trim()))
-      ),
+      transport: fallback(process.env.PONDER_RPC_URLS_8453!.split(",").map((url) => http(url.trim()))),
     },
   },
   options: {
-    maxHealthcheckDuration: 1,
+    maxHealthcheckDuration: 15 * 60,
   },
   database: {
-    schema: process.env.GITHUB_SHA?.substring(0, 7) ?? "local",
-    publishSchema: "public",
     kind: "postgres",
   },
   contracts: {
