@@ -21,7 +21,6 @@ export default createSchema((p) => ({
     id: p.int(),
     ownerId: p.string().references("Account.id"),
     strength: p.int(),
-    strengthRemaining: p.int(),
     lastUsedTimestamp: p.int().optional(),
     lastUsedDay: p.int().optional(),
     streak: p.int(),

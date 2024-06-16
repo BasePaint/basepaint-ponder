@@ -53,7 +53,6 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
       data: {
         lastUsedDay: Number(event.args.day),
         lastUsedTimestamp: Number(event.block.timestamp),
-        strengthRemaining: brush.strengthRemaining - pixelsContributed,
         streak,
       },
     });
