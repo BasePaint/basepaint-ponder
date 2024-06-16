@@ -6,15 +6,17 @@ import { BasePaintAbi } from "./abis/BasePaintAbi";
 import { BasePaintBrushEventsAbi } from "./abis/BasePaintBrushEventsAbi";
 import { BasePaintWIPAbi } from "./abis/BasePaintWIPAbi";
 
+const { RAILWAY_HEALTHCHECK_TIMEOUT_SEC, PONDER_RPC_URLS_8453 } = process.env;
+
 export default createConfig({
   networks: {
     base: {
       chainId: 8453,
-      transport: fallback(process.env.PONDER_RPC_URLS_8453!.split(",").map((url) => http(url.trim()))),
+      transport: fallback(PONDER_RPC_URLS_8453!.split(",").map((url) => http(url.trim()))),
     },
   },
   options: {
-    maxHealthcheckDuration: 15 * 60,
+    maxHealthcheckDuration: RAILWAY_HEALTHCHECK_TIMEOUT_SEC ? Number(RAILWAY_HEALTHCHECK_TIMEOUT_SEC) - 60 : 15 * 60,
   },
   database: {
     kind: "postgres",
