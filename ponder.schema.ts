@@ -52,19 +52,25 @@ export default createSchema((p) => ({
     canvas: p.one("canvasId"),
   }),
 
-  Stroke: p.createTable({
-    id: p.bigint(),
-    canvasId: p.int().references("Canvas.id"),
-    accountId: p.string().references("Account.id"),
-    brushId: p.int().references("Brush.id"),
-    data: p.string(),
-    tx: p.string(),
-    timestamp: p.int(),
+  Stroke: p.createTable(
+    {
+      id: p.bigint(),
+      canvasId: p.int().references("Canvas.id"),
+      accountId: p.string().references("Account.id"),
+      brushId: p.int().references("Brush.id"),
+      data: p.string(),
+      tx: p.string(),
+      timestamp: p.int(),
+      minted: p.boolean(),
 
-    canvas: p.one("canvasId"),
-    account: p.one("accountId"),
-    brush: p.one("brushId"),
-  }),
+      canvas: p.one("canvasId"),
+      account: p.one("accountId"),
+      brush: p.one("brushId"),
+    },
+    {
+      txIndex: p.index("tx"),
+    }
+  ),
 
   Withdrawal: p.createTable({
     id: p.string(),

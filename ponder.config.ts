@@ -4,6 +4,7 @@ import { fallback, http } from "viem";
 import { BasePaintBrushAbi } from "./abis/BasePaintBrushAbi";
 import { BasePaintAbi } from "./abis/BasePaintAbi";
 import { BasePaintBrushEventsAbi } from "./abis/BasePaintBrushEventsAbi";
+import { BasePaintWIPAbi } from "./abis/BasePaintWIPAbi";
 
 export default createConfig({
   networks: {
@@ -36,6 +37,12 @@ export default createConfig({
       address: "0xb152f48F207d9D1C30Ff60d46E8cb8c1a5d00dEC",
       network: "base",
       startBlock: 15849605,
+    },
+    BasePaintWIP: {
+      abi: BasePaintWIPAbi,
+      address: "0xE6249eAfdC9C8a809fE28a5213120B1860f9a75f",
+      network: "base",
+      startBlock: 3457270,
     },
   },
 });
