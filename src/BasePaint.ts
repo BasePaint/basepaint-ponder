@@ -113,6 +113,7 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
       accountId: event.args.author,
       brushId: Number(event.args.tokenId),
       data: event.args.pixels,
+      pixels: pixelsContributed,
       tx: event.transaction.hash,
       timestamp: Number(event.block.timestamp),
       minted: false,

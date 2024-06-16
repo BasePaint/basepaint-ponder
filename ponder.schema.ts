@@ -58,6 +58,7 @@ export default createSchema((p) => ({
       accountId: p.string().references("Account.id"),
       brushId: p.int().references("Brush.id"),
       data: p.string(),
+      pixels: p.int(),
       tx: p.string(),
       timestamp: p.int(),
       minted: p.boolean(),
