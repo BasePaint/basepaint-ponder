@@ -17,18 +17,24 @@ export default createSchema((p) => ({
     strokes: p.many("Stroke.accountId"),
   }),
 
-  Brush: p.createTable({
-    id: p.int(),
-    ownerId: p.string().references("Account.id"),
-    strength: p.int(),
-    lastUsedTimestamp: p.int().optional(),
-    lastUsedDay: p.int().optional(),
-    streak: p.int(),
+  Brush: p.createTable(
+    {
+      id: p.int(),
+      ownerId: p.string().references("Account.id"),
+      strength: p.int(),
+      lastUsedTimestamp: p.int().optional(),
+      lastUsedDay: p.int().optional(),
+      mintedTimestamp: p.int(),
+      streak: p.int(),
 
-    owner: p.one("ownerId"),
-    usages: p.many("Usage.brushId"),
-    strokes: p.many("Stroke.brushId"),
-  }),
+      owner: p.one("ownerId"),
+      usages: p.many("Usage.brushId"),
+      strokes: p.many("Stroke.brushId"),
+    },
+    {
+      strengthIndex: p.index("strength"),
+    }
+  ),
 
   Contribution: p.createTable({
     id: p.string(),

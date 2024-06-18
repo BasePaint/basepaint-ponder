@@ -9,6 +9,7 @@ ponder.on("BasePaintBrush:Transfer", async ({ event, context }) => {
       ownerId: event.args.to,
       strength: 0,
       streak: 0,
+      mintedTimestamp: Number(event.block.timestamp),
     },
     update: {
       ownerId: event.args.to,
