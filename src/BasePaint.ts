@@ -1,5 +1,4 @@
 import { ponder } from "@/generated";
-import { zeroAddress } from "viem";
 
 ponder.on("BasePaint:setup", async ({ context }) => {
   const { Global } = context.db;

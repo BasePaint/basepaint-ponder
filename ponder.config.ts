@@ -8,6 +8,10 @@ import { BasePaintWIPAbi } from "./abis/BasePaintWIPAbi";
 
 const { RAILWAY_HEALTHCHECK_TIMEOUT_SEC, PONDER_RPC_URLS_8453 } = process.env;
 
+const maxHealthcheckDuration = (Number(RAILWAY_HEALTHCHECK_TIMEOUT_SEC ?? 55) - 1) * 60;
+
+console.log({ RAILWAY_HEALTHCHECK_TIMEOUT_SEC, maxHealthcheckDuration });
+
 export default createConfig({
   networks: {
     base: {
@@ -16,7 +20,7 @@ export default createConfig({
     },
   },
   options: {
-    maxHealthcheckDuration: RAILWAY_HEALTHCHECK_TIMEOUT_SEC ? Number(RAILWAY_HEALTHCHECK_TIMEOUT_SEC) - 60 : 15 * 60,
+    maxHealthcheckDuration,
   },
   database: {
     kind: "postgres",
