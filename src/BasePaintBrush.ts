@@ -1,34 +1,20 @@
 import { ponder } from "@/generated";
-import { zeroAddress } from "viem";
 
 ponder.on("BasePaintBrush:Transfer", async ({ event, context }) => {
   const { Brush, Account } = context.db;
 
-  if (event.args.from === zeroAddress) {
-    const strength = await context.client.readContract({
-      abi: context.contracts.BasePaintBrush.abi,
-      address: context.contracts.BasePaintBrush.address,
-      functionName: "strengths",
-      args: [BigInt(event.args.tokenId)],
-    });
-
-    await Brush.create({
-      id: Number(event.args.tokenId),
-      data: {
-        ownerId: event.args.to,
-        strength: Number(strength),
-        streak: 0,
-        mintedTimestamp: Number(event.block.timestamp),
-      },
-    });
-  } else {
-    await Brush.update({
-      id: Number(event.args.tokenId),
-      data: {
-        ownerId: event.args.to,
-      },
-    });
-  }
+  await Brush.upsert({
+    id: Number(event.args.tokenId),
+    create: {
+      ownerId: event.args.to,
+      strength: 0,
+      streak: 0,
+      mintedTimestamp: Number(event.block.timestamp),
+    },
+    update: {
+      ownerId: event.args.to,
+    },
+  });
 
   await Account.upsert({
     id: event.args.to,
