@@ -116,26 +116,8 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
       pixels: pixelsContributed,
       tx: event.transaction.hash,
       timestamp: Number(event.block.timestamp),
-      minted: false,
     },
   });
-});
-
-ponder.on("BasePaintWIP:Transfer", async ({ event, context }) => {
-  const { Stroke } = context.db;
-
-  if (event.args.from === zeroAddress) {
-    const tx = "0x" + event.args.tokenId.toString(16).padStart(64, "0");
-    const stroke = await Stroke.findMany({ where: { tx } });
-    if (stroke.items.length === 1) {
-      await Stroke.update({
-        id: stroke.items[0]!.id,
-        data: {
-          minted: true,
-        },
-      });
-    }
-  }
 });
 
 ponder.on("BasePaint:ArtistsEarned", async ({ event, context }) => {

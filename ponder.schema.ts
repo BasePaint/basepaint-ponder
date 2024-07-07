@@ -67,7 +67,6 @@ export default createSchema((p) => ({
       pixels: p.int(),
       tx: p.string(),
       timestamp: p.int(),
-      minted: p.boolean(),
 
       canvas: p.one("canvasId"),
       account: p.one("accountId"),
