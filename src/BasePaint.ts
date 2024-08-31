@@ -75,6 +75,7 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
     id: day,
     create: {
       totalMints: 0,
+      totalBurns: 0,
       totalEarned: 0n,
       pixelsCount: pixelsContributed,
       totalArtists: 1,

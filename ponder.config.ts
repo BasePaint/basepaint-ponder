@@ -5,6 +5,7 @@ import { BasePaintBrushAbi } from "./abis/BasePaintBrushAbi";
 import { BasePaintAbi } from "./abis/BasePaintAbi";
 import { BasePaintBrushEventsAbi } from "./abis/BasePaintBrushEventsAbi";
 import { BasePaintWIPAbi } from "./abis/BasePaintWIPAbi";
+import { BasePaintAnimationAbi } from "./abis/BasePaintAnimationAbi";
 
 const { RAILWAY_HEALTHCHECK_TIMEOUT_SEC, PONDER_RPC_URLS_8453 } = process.env;
 
@@ -49,6 +50,12 @@ export default createConfig({
       address: "0xE6249eAfdC9C8a809fE28a5213120B1860f9a75f",
       network: "base",
       startBlock: 3457270,
+    },
+    BasePaintAnimation: {
+      abi: BasePaintAnimationAbi,
+      address: "0xC59F475122e914aFCf31C0a9E0A2274666135e4E",
+      network: "base",
+      startBlock: 19092516,
     },
   },
 });

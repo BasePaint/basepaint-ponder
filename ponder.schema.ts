@@ -91,6 +91,7 @@ export default createSchema((p) => ({
   Canvas: p.createTable({
     id: p.int(),
     totalMints: p.int(),
+    totalBurns: p.int(),
     totalEarned: p.bigint(),
     totalArtists: p.int(),
     pixelsCount: p.int(),
@@ -98,5 +99,10 @@ export default createSchema((p) => ({
     contributions: p.many("Contribution.canvasId"),
     withdrawals: p.many("Withdrawal.canvasId"),
     strokes: p.many("Stroke.canvasId"),
+  }),
+
+  Animation: p.createTable({
+    id: p.int(),
+    totalMints: p.int(),
   }),
 }));
