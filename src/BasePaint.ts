@@ -174,3 +174,20 @@ ponder.on("BasePaint:TransferBatch", async ({ event, context }) => {
     }
   }
 });
+
+ponder.on("BasePaintMetadataRegistry:MetadataUpdated", async ({ event, context }) => {
+  const { Canvas } = context.db;
+  const canvas = await Canvas.findUnique({ id: Number(event.args.id) });
+
+  if (canvas) {
+    await Canvas.update({
+      id: Number(event.args.id),
+      data: {
+        name: event.args.name,
+        palette: event.args.palette.map((color) => "#" + color.toString(16).padStart(6, "0").toUpperCase()).join(","),
+        size: Number(event.args.size),
+        proposer: event.args.proposer,
+      },
+    });
+  }
+});

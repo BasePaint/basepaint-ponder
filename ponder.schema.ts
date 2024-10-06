@@ -95,6 +95,10 @@ export default createSchema((p) => ({
     totalEarned: p.bigint(),
     totalArtists: p.int(),
     pixelsCount: p.int(),
+    name: p.string().optional(),
+    palette: p.string().optional(),
+    size: p.int().optional(),
+    proposer: p.string().optional(),
 
     contributions: p.many("Contribution.canvasId"),
     withdrawals: p.many("Withdrawal.canvasId"),
