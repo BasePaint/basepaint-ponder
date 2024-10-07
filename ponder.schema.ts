@@ -10,6 +10,8 @@ export default createSchema((p) => ({
   Account: p.createTable({
     id: p.string(),
     totalPixels: p.int(),
+    totalWithdrawn: p.bigint(),
+    totalEarned: p.bigint(),
 
     brushes: p.many("Brush.ownerId"),
     contributions: p.many("Contribution.accountId"),

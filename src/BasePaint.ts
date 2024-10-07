@@ -33,7 +33,6 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
   const { Canvas, Brush, Contribution, Account, Usage, Stroke } = context.db;
 
   const day = Number(event.args.day);
-  const canvas = await Canvas.findUnique({ id: Number(event.args.day) });
   const pixelsContributed = Math.floor((event.args.pixels.length - 2) / 6);
 
   const brush = await Brush.findUnique({ id: Number(event.args.tokenId) });
@@ -55,6 +54,34 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
         streak,
       },
     });
+  }
+
+  const canvas = await Canvas.findUnique({ id: Number(event.args.day) });
+  if (!canvas) {
+    const previousCanvas = await Canvas.findUnique({ id: Number(event.args.day) - 2 });
+    if (previousCanvas) {
+      let cursor: string | undefined;
+      do {
+        const contributions = await Contribution.findMany({
+          where: {
+            canvasId: previousCanvas.id,
+          },
+          after: cursor,
+          limit: 1000,
+        });
+        for (const contribution of contributions.items) {
+          const earnings =
+            (BigInt(contribution.pixelsCount) * previousCanvas.totalEarned) / BigInt(previousCanvas.pixelsCount);
+          await Account.update({
+            id: contribution.accountId,
+            data: ({ current }) => ({
+              totalEarned: current.totalEarned + earnings,
+            }),
+          });
+        }
+        cursor = contributions.pageInfo.endCursor ?? undefined;
+      } while (cursor);
+    }
   }
 
   const contributionId = `${event.args.day}_${event.args.author}`;
@@ -80,10 +107,10 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
       pixelsCount: pixelsContributed,
       totalArtists: 1,
     },
-    update: {
-      pixelsCount: (canvas?.pixelsCount ?? 0) + pixelsContributed,
-      totalArtists: contribution === null ? (canvas?.totalArtists ?? 0) + 1 : canvas?.totalArtists,
-    },
+    update: ({ current }) => ({
+      pixelsCount: current.pixelsCount + pixelsContributed,
+      totalArtists: contribution === null ? current.totalArtists + 1 : current.totalArtists,
+    }),
   });
 
   const usageId = `${event.args.day}_${event.args.tokenId}`;
@@ -132,7 +159,14 @@ ponder.on("BasePaint:ArtistsEarned", async ({ event, context }) => {
 });
 
 ponder.on("BasePaint:ArtistWithdraw", async ({ event, context }) => {
-  const { Withdrawal } = context.db;
+  const { Withdrawal, Account } = context.db;
+
+  await Account.update({
+    id: event.args.author,
+    data: ({ current }) => ({
+      totalWithdrawn: current.totalWithdrawn + event.args.amount,
+    }),
+  });
 
   await Withdrawal.create({
     id: event.args.day + "_" + event.args.author,

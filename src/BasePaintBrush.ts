@@ -20,6 +20,8 @@ ponder.on("BasePaintBrush:Transfer", async ({ event, context }) => {
     id: event.args.to,
     create: {
       totalPixels: 0,
+      totalWithdrawn: 0n,
+      totalEarned: 0n,
     },
     update: {},
   });
@@ -34,7 +36,6 @@ ponder.on("BasePaintBrushEvents:Deployed", async ({ event, context }) => {
   let cursor: string | undefined | null;
   while (true) {
     const brushes = await Brush.findMany({ limit: 100, after: cursor ?? undefined });
-    console.log("Brushes", brushes.items.length, { cursor });
 
     const strengths = await Promise.all(
       brushes.items.map((brush) =>
