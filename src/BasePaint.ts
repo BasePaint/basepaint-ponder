@@ -128,9 +128,24 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
 
   await Account.update({
     id: event.args.author,
-    data: ({ current }) => ({
-      totalPixels: current.totalPixels + pixelsContributed,
-    }),
+    data: ({ current }) => {
+      let streak = current.streak;
+
+      if (current.lastPaintedDay === day - 1) {
+        streak += 1;
+      }
+
+      if (current.lastPaintedDay == null || current.lastPaintedDay < day - 1) {
+        streak = 1;
+      }
+
+      return {
+        streak,
+        longestStreak: Math.max(current.longestStreak, streak),
+        lastPaintedDay: day,
+        totalPixels: current.totalPixels + pixelsContributed,
+      };
+    },
   });
 
   await Stroke.create({

@@ -12,6 +12,9 @@ export default createSchema((p) => ({
     totalPixels: p.int(),
     totalWithdrawn: p.bigint(),
     totalEarned: p.bigint(),
+    streak: p.int(),
+    longestStreak: p.int(),
+    lastPaintedDay: p.int().optional(),
 
     brushes: p.many("Brush.ownerId"),
     contributions: p.many("Contribution.accountId"),

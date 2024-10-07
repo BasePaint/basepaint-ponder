@@ -22,6 +22,8 @@ ponder.on("BasePaintBrush:Transfer", async ({ event, context }) => {
       totalPixels: 0,
       totalWithdrawn: 0n,
       totalEarned: 0n,
+      streak: 0,
+      longestStreak: 0,
     },
     update: {},
   });
