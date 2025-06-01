@@ -1,0 +1,30 @@
+diff --git a/node_modules/@ponder/core/dist/bin/ponder.js b/node_modules/@ponder/core/dist/bin/ponder.js
+index 348c1c9..16e1b51 100755
+--- a/node_modules/@ponder/core/dist/bin/ponder.js
++++ b/node_modules/@ponder/core/dist/bin/ponder.js
+@@ -8080,8 +8082,8 @@ var graphiQLHtml = (path11) => `<!--
+   </head>
+   <body>
+     <div id="graphiql">Loading...</div>
+-    <script crossorigin src="https://unpkg.com/react/umd/react.development.js"></script>1
+-    <script crossorigin src="https://unpkg.com/react-dom/umd/react-dom.development.js"></script>
++    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
++    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+     <script src="https://unpkg.com/graphiql/graphiql.min.js" crossorigin="anonymous"></script>
+     <script src="https://unpkg.com/@graphiql/plugin-explorer/dist/index.umd.js" crossorigin="anonymous"></script>
+     <script>
+diff --git a/node_modules/@ponder/core/src/ui/graphiql.html.ts b/node_modules/@ponder/core/src/ui/graphiql.html.ts
+index 8e6dd18..b8c5931 100644
+--- a/node_modules/@ponder/core/src/ui/graphiql.html.ts
++++ b/node_modules/@ponder/core/src/ui/graphiql.html.ts
+@@ -39,8 +39,8 @@ export const graphiQLHtml = (path: string) => `<!--
+   </head>
+   <body>
+     <div id="graphiql">Loading...</div>
+-    <script crossorigin src="https://unpkg.com/react/umd/react.development.js"></script>1
+-    <script crossorigin src="https://unpkg.com/react-dom/umd/react-dom.development.js"></script>
++    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
++    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+     <script src="https://unpkg.com/graphiql/graphiql.min.js" crossorigin="anonymous"></script>
+     <script src="https://unpkg.com/@graphiql/plugin-explorer/dist/index.umd.js" crossorigin="anonymous"></script>
+     <script>

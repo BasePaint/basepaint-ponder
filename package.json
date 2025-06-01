@@ -9,13 +9,15 @@
     "serve": "ponder serve",
     "codegen": "ponder codegen",
     "lint": "eslint .",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "postinstall": "patch-package"
   },
   "prettier": {
     "printWidth": 120
   },
   "dependencies": {
     "@ponder/core": "^0.4.38",
+    "patch-package": "^8.0.0",
     "viem": "^1.19.3"
   },
   "devDependencies": {
