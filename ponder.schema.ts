@@ -5,6 +5,12 @@ export default createSchema((p) => ({
     id: p.int(),
     startedAt: p.int(),
     epochDuration: p.int(),
+    totalArtists: p.int(),
+    totalPixels: p.int(),
+    totalEarnings: p.bigint(),
+    totalWithdrawals: p.bigint(),
+    totalMints: p.int(),
+    totalBurns: p.int(),
   }),
 
   Account: p.createTable({

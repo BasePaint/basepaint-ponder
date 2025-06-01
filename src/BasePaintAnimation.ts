@@ -1,7 +1,7 @@
 import { ponder } from "@/generated";
 
 ponder.on("BasePaintAnimation:TransferSingle", async ({ event, context }) => {
-  const { Animation, Canvas } = context.db;
+  const { Animation, Canvas, Global } = context.db;
 
   if (BigInt(event.args.from) === 0n) {
     const count = Number(event.args.value);
@@ -18,6 +18,13 @@ ponder.on("BasePaintAnimation:TransferSingle", async ({ event, context }) => {
 
     await Canvas.update({
       id: Number(event.args.id),
+      data: ({ current }) => ({
+        totalBurns: current.totalBurns + 2 * count,
+      }),
+    });
+
+    await Global.update({
+      id: 1,
       data: ({ current }) => ({
         totalBurns: current.totalBurns + 2 * count,
       }),

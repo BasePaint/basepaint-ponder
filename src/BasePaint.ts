@@ -8,6 +8,12 @@ ponder.on("BasePaint:setup", async ({ context }) => {
     data: {
       startedAt: 0,
       epochDuration: 0,
+      totalArtists: 0,
+      totalPixels: 0,
+      totalEarnings: 0n,
+      totalWithdrawals: 0n,
+      totalMints: 0,
+      totalBurns: 0,
     },
   });
 });
@@ -30,7 +36,7 @@ ponder.on("BasePaint:Started", async ({ event, context }) => {
 });
 
 ponder.on("BasePaint:Painted", async ({ event, context }) => {
-  const { Canvas, Brush, Contribution, Account, Usage, Stroke } = context.db;
+  const { Canvas, Brush, Contribution, Account, Usage, Stroke, Global } = context.db;
 
   const day = Number(event.args.day);
   const pixelsContributed = Math.floor((event.args.pixels.length - 2) / 6);
@@ -126,6 +132,7 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
     }),
   });
 
+  const account = await Account.findUnique({ id: event.args.author });
   await Account.update({
     id: event.args.author,
     data: ({ current }) => {
@@ -160,10 +167,18 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
       timestamp: Number(event.block.timestamp),
     },
   });
+
+  await Global.update({
+    id: 1,
+    data: ({ current }) => ({
+      totalPixels: current.totalPixels + pixelsContributed,
+      totalArtists: account && account.totalPixels > 0 ? current.totalArtists : current.totalArtists + 1,
+    }),
+  });
 });
 
 ponder.on("BasePaint:ArtistsEarned", async ({ event, context }) => {
-  const { Canvas } = context.db;
+  const { Canvas, Global } = context.db;
 
   await Canvas.update({
     id: Number(event.args.day),
@@ -171,10 +186,17 @@ ponder.on("BasePaint:ArtistsEarned", async ({ event, context }) => {
       totalEarned: current.totalEarned + event.args.amount,
     }),
   });
+
+  await Global.update({
+    id: 1,
+    data: ({ current }) => ({
+      totalEarnings: current.totalEarnings + event.args.amount,
+    }),
+  });
 });
 
 ponder.on("BasePaint:ArtistWithdraw", async ({ event, context }) => {
-  const { Withdrawal, Account } = context.db;
+  const { Withdrawal, Account, Global } = context.db;
 
   await Account.update({
     id: event.args.author,
@@ -192,10 +214,17 @@ ponder.on("BasePaint:ArtistWithdraw", async ({ event, context }) => {
       timestamp: Number(event.block.timestamp),
     },
   });
+
+  await Global.update({
+    id: 1,
+    data: ({ current }) => ({
+      totalWithdrawals: current.totalWithdrawals + event.args.amount,
+    }),
+  });
 });
 
 ponder.on("BasePaint:TransferSingle", async ({ event, context }) => {
-  const { Canvas } = context.db;
+  const { Canvas, Global } = context.db;
 
   if (BigInt(event.args.from) === 0n) {
     await Canvas.update({
@@ -204,11 +233,17 @@ ponder.on("BasePaint:TransferSingle", async ({ event, context }) => {
         totalMints: current.totalMints + Number(event.args.value),
       }),
     });
+
+    await Global.update({
+      id: 1,
+      data: ({ current }) => ({
+        totalMints: current.totalMints + Number(event.args.value),
+      }),
+    });
   }
 });
-
 ponder.on("BasePaint:TransferBatch", async ({ event, context }) => {
-  const { Canvas } = context.db;
+  const { Canvas, Global } = context.db;
 
   for (let i = 0; i < event.args.ids.length; i++) {
     if (BigInt(event.args.from) === 0n) {
@@ -216,6 +251,13 @@ ponder.on("BasePaint:TransferBatch", async ({ event, context }) => {
       const value = event.args.values[i];
       await Canvas.update({
         id: Number(id),
+        data: ({ current }) => ({
+          totalMints: current.totalMints + Number(value),
+        }),
+      });
+
+      await Global.update({
+        id: 1,
         data: ({ current }) => ({
           totalMints: current.totalMints + Number(value),
         }),
