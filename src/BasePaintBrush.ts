@@ -1,6 +1,9 @@
 import { ponder } from "@/generated";
+import { trackBalance } from "./utils";
 
 ponder.on("BasePaintBrush:Transfer", async ({ event, context }) => {
+  await trackBalance(context.contracts.BasePaint.address, event, context);
+
   const { Brush, Account } = context.db;
 
   await Brush.upsert({

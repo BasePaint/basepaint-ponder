@@ -1,6 +1,9 @@
 import { ponder } from "@/generated";
+import { trackBalance } from "./utils";
 
 ponder.on("BasePaintAnimation:TransferSingle", async ({ event, context }) => {
+  await trackBalance(context.contracts.BasePaintAnimation.address, event, context);
+
   const { Animation, Canvas, Global } = context.db;
 
   if (BigInt(event.args.from) === 0n) {

@@ -1,4 +1,5 @@
 import { ponder } from "@/generated";
+import { trackBalance } from "./utils";
 
 ponder.on("BasePaint:setup", async ({ context }) => {
   const { Global } = context.db;
@@ -225,6 +226,8 @@ ponder.on("BasePaint:ArtistWithdraw", async ({ event, context }) => {
 });
 
 ponder.on("BasePaint:TransferSingle", async ({ event, context }) => {
+  await trackBalance(context.contracts.BasePaint.address, event, context);
+
   const { Canvas, Global } = context.db;
 
   if (BigInt(event.args.from) === 0n) {
@@ -243,7 +246,10 @@ ponder.on("BasePaint:TransferSingle", async ({ event, context }) => {
     });
   }
 });
+
 ponder.on("BasePaint:TransferBatch", async ({ event, context }) => {
+  await trackBalance(context.contracts.BasePaint.address, event, context);
+
   const { Canvas, Global } = context.db;
 
   for (let i = 0; i < event.args.ids.length; i++) {

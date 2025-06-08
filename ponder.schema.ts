@@ -121,4 +121,20 @@ export default createSchema((p) => ({
     id: p.int(),
     totalMints: p.int(),
   }),
+
+  Balance: p.createTable(
+    {
+      id: p.string(),
+      ownerId: p.string().references("Account.id"),
+      contract: p.string(),
+      tokenId: p.bigint(),
+      value: p.int(),
+      owner: p.one("ownerId"),
+    },
+    {
+      ownerIndex: p.index("ownerId"),
+      contractIndex: p.index("contract"),
+      tokenIdIndex: p.index("tokenId"),
+    }
+  ),
 }));

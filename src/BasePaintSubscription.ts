@@ -1,6 +1,9 @@
 import { ponder } from "@/generated";
+import { trackBalance } from "./utils";
 
 ponder.on("BasePaintSubscription:TransferSingle", async ({ event, context }) => {
+  await trackBalance(context.contracts.BasePaintSubscription.address, event, context);
+
   const { Global } = context.db;
 
   let delta = 0;
@@ -24,6 +27,8 @@ ponder.on("BasePaintSubscription:TransferSingle", async ({ event, context }) => 
 });
 
 ponder.on("BasePaintSubscription:TransferBatch", async ({ event, context }) => {
+  await trackBalance(context.contracts.BasePaintSubscription.address, event, context);
+
   const { Global } = context.db;
 
   let delta = 0;
