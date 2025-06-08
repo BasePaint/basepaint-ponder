@@ -7,7 +7,7 @@ import { BasePaintBrushEventsAbi } from "./abis/BasePaintBrushEventsAbi";
 import { BasePaintWIPAbi } from "./abis/BasePaintWIPAbi";
 import { BasePaintAnimationAbi } from "./abis/BasePaintAnimationAbi";
 import { BasePaintMetadataRegistryAbi } from "./abis/BasePaintMetadataRegistry";
-
+import { BasePaintSubscriptionAbi } from "./abis/BasePaintSubscriptionAbi";
 const { RAILWAY_HEALTHCHECK_TIMEOUT_SEC, PONDER_RPC_URLS_8453 } = process.env;
 
 const maxHealthcheckDuration = (Number(RAILWAY_HEALTHCHECK_TIMEOUT_SEC ?? 55) - 1) * 60;
@@ -63,6 +63,12 @@ export default createConfig({
       address: "0xcfb86b6aC2cE09f9A01C39af9Dccf3ecba304F95",
       network: "base",
       startBlock: 20724252,
+    },
+    BasePaintSubscription: {
+      abi: BasePaintSubscriptionAbi,
+      address: "0x75CF063a65d361527180805b244bC51c1deAb075",
+      network: "base",
+      startBlock: 30570812,
     },
   },
 });

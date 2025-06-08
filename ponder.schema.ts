@@ -11,6 +11,7 @@ export default createSchema((p) => ({
     totalWithdrawals: p.bigint(),
     totalMints: p.int(),
     totalBurns: p.int(),
+    totalSubscriptions: p.int(),
   }),
 
   Account: p.createTable({

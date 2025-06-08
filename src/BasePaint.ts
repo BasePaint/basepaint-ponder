@@ -14,6 +14,7 @@ ponder.on("BasePaint:setup", async ({ context }) => {
       totalWithdrawals: 0n,
       totalMints: 0,
       totalBurns: 0,
+      totalSubscriptions: 0,
     },
   });
 });
