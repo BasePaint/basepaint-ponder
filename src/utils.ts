@@ -36,7 +36,7 @@ export async function trackBalance(
   event: TransferSingleEvent | TransferBatchEvent | TransferEvent,
   context: Context
 ) {
-  const { Balance } = context.db;
+  const { Balance, TotalBalance } = context.db;
 
   // prettier-ignore
   const ids = event.name === "TransferSingle" ? [event.args.id] : event.name === "Transfer" ? [event.args.tokenId] : event.args.ids;
@@ -57,6 +57,13 @@ export async function trackBalance(
           value: current.value - value,
         }),
       });
+
+      await TotalBalance.update({
+        id: `${contract}_${event.args.from}`,
+        data: ({ current }) => ({
+          value: current.value - value,
+        }),
+      });
     }
 
     if (event.args.to !== "0x0000000000000000000000000000000000000000") {
@@ -66,6 +73,18 @@ export async function trackBalance(
           ownerId: event.args.to,
           contract,
           tokenId: id,
+          value,
+        },
+        update: ({ current }) => ({
+          value: current.value + value,
+        }),
+      });
+
+      await TotalBalance.upsert({
+        id: `${contract}_${event.args.to}`,
+        create: {
+          ownerId: event.args.to,
+          contract,
           value,
         },
         update: ({ current }) => ({
