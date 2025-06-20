@@ -1,7 +1,11 @@
 import { ponder } from "ponder:registry";
 import { Brush, Account } from "ponder:schema";
+import { trackBalance } from "./utils";
 
 ponder.on("BasePaintBrush:Transfer", async ({ event, context }) => {
+  // Track balance changes
+  await trackBalance("0xD68fe5b53e7E1AbeB5A4d0A6660667791f39263a", event, context);
+
   await context.db
     .insert(Brush)
     .values({

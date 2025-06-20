@@ -1,6 +1,7 @@
 import { ponder } from "ponder:registry";
 import { Global, Canvas, Brush, Contribution, Account, Usage, Stroke, Withdrawal } from "ponder:schema";
 import { eq } from "ponder";
+import { trackBalance } from "./utils";
 
 ponder.on("BasePaint:setup", async ({ context }) => {
   await context.db.insert(Global).values({
@@ -198,6 +199,9 @@ ponder.on("BasePaint:ArtistWithdraw", async ({ event, context }) => {
 });
 
 ponder.on("BasePaint:TransferSingle", async ({ event, context }) => {
+  // Track balance changes
+  await trackBalance("0xBa5e05cb26b78eDa3A2f8e3b3814726305dcAc83", event, context);
+
   const canvas = await context.db.find(Canvas, { id: Number(event.args.id) });
   if (BigInt(event.args.from) === 0n && canvas) {
     await context.db.update(Canvas, { id: Number(event.args.id) }).set({
@@ -214,6 +218,9 @@ ponder.on("BasePaint:TransferSingle", async ({ event, context }) => {
 });
 
 ponder.on("BasePaint:TransferBatch", async ({ event, context }) => {
+  // Track balance changes
+  await trackBalance("0xBa5e05cb26b78eDa3A2f8e3b3814726305dcAc83", event, context);
+
   for (let i = 0; i < event.args.ids.length; i++) {
     if (BigInt(event.args.from) === 0n) {
       const id = event.args.ids[i];
