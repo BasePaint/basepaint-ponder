@@ -1,154 +1,127 @@
-import { createSchema } from "@ponder/core";
+import { onchainTable, index } from "ponder";
 
-export default createSchema((p) => ({
-  Global: p.createTable({
-    id: p.int(),
-    startedAt: p.int(),
-    epochDuration: p.int(),
-    totalArtists: p.int(),
-    totalPixels: p.int(),
-    totalEarnings: p.bigint(),
-    totalWithdrawals: p.bigint(),
-    totalMints: p.int(),
-    totalBurns: p.int(),
-    totalSubscriptions: p.int(),
-  }),
-
-  Account: p.createTable({
-    id: p.string(),
-    totalPixels: p.int(),
-    totalWithdrawn: p.bigint(),
-    totalEarned: p.bigint(),
-    streak: p.int(),
-    longestStreak: p.int(),
-    lastPaintedDay: p.int().optional(),
-
-    brushes: p.many("Brush.ownerId"),
-    contributions: p.many("Contribution.accountId"),
-    withdrawals: p.many("Withdrawal.accountId"),
-    strokes: p.many("Stroke.accountId"),
-  }),
-
-  Brush: p.createTable(
-    {
-      id: p.int(),
-      ownerId: p.string().references("Account.id"),
-      strength: p.int(),
-      lastUsedTimestamp: p.int().optional(),
-      lastUsedDay: p.int().optional(),
-      mintedTimestamp: p.int(),
-      streak: p.int(),
-
-      owner: p.one("ownerId"),
-      usages: p.many("Usage.brushId"),
-      strokes: p.many("Stroke.brushId"),
-    },
-    {
-      strengthIndex: p.index("strength"),
-    }
-  ),
-
-  Contribution: p.createTable({
-    id: p.string(),
-    accountId: p.string().references("Account.id"),
-    canvasId: p.int().references("Canvas.id"),
-    pixelsCount: p.int(),
-
-    // TODO: add strokes?
-    account: p.one("accountId"),
-    canvas: p.one("canvasId"),
-  }),
-
-  Usage: p.createTable({
-    id: p.string(),
-    brushId: p.int().references("Brush.id"),
-    canvasId: p.int().references("Canvas.id"),
-    pixelsCount: p.int(),
-
-    brush: p.one("brushId"),
-    canvas: p.one("canvasId"),
-  }),
-
-  Stroke: p.createTable(
-    {
-      id: p.bigint(),
-      canvasId: p.int().references("Canvas.id"),
-      accountId: p.string().references("Account.id"),
-      brushId: p.int().references("Brush.id"),
-      data: p.string(),
-      pixels: p.int(),
-      tx: p.string(),
-      timestamp: p.int(),
-
-      canvas: p.one("canvasId"),
-      account: p.one("accountId"),
-      brush: p.one("brushId"),
-    },
-    {
-      txIndex: p.index("tx"),
-    }
-  ),
-
-  Withdrawal: p.createTable({
-    id: p.string(),
-    accountId: p.string().references("Account.id"),
-    canvasId: p.int().references("Canvas.id"),
-    amount: p.bigint(),
-    timestamp: p.int(),
-
-    canvas: p.one("canvasId"),
-    account: p.one("accountId"),
-  }),
-
-  Canvas: p.createTable({
-    id: p.int(),
-    totalMints: p.int(),
-    totalBurns: p.int(),
-    totalEarned: p.bigint(),
-    totalArtists: p.int(),
-    pixelsCount: p.int(),
-    name: p.string().optional(),
-    palette: p.string().optional(),
-    size: p.int().optional(),
-    proposer: p.string().optional(),
-
-    contributions: p.many("Contribution.canvasId"),
-    withdrawals: p.many("Withdrawal.canvasId"),
-    strokes: p.many("Stroke.canvasId"),
-  }),
-
-  Animation: p.createTable({
-    id: p.int(),
-    totalMints: p.int(),
-  }),
-
-  Balance: p.createTable(
-    {
-      id: p.string(),
-      ownerId: p.string().references("Account.id"),
-      contract: p.string(),
-      tokenId: p.bigint(),
-      value: p.int(),
-      owner: p.one("ownerId"),
-    },
-    {
-      ownerIndex: p.index("ownerId"),
-      contractIndex: p.index("contract"),
-      tokenIdIndex: p.index("tokenId"),
-    }
-  ),
-
-  TotalBalance: p.createTable(
-    {
-      id: p.string(),
-      ownerId: p.string().references("Account.id"),
-      contract: p.string(),
-      value: p.int(),
-      owner: p.one("ownerId"),
-    },
-    {
-      ownerIndex: p.index("ownerId"),
-      contractIndex: p.index("contract"),
-    }
-  ),
+export const Global = onchainTable("global", (t) => ({
+  id: t.integer().primaryKey(),
+  startedAt: t.integer(),
+  epochDuration: t.integer(),
+  totalArtists: t.integer(),
+  totalPixels: t.integer(),
+  totalEarnings: t.bigint(),
+  totalWithdrawals: t.bigint(),
+  totalMints: t.integer(),
+  totalBurns: t.integer(),
+  totalSubscriptions: t.integer(),
 }));
+
+export const Account = onchainTable("account", (t) => ({
+  id: t.text().primaryKey(),
+  totalPixels: t.integer(),
+  totalWithdrawn: t.bigint(),
+  totalEarned: t.bigint(),
+  streak: t.integer(),
+  longestStreak: t.integer(),
+  lastPaintedDay: t.integer(),
+}));
+
+export const Brush = onchainTable(
+  "brush",
+  (t) => ({
+    id: t.integer().primaryKey(),
+    ownerId: t.text().notNull(),
+    strength: t.integer(),
+    lastUsedTimestamp: t.integer(),
+    lastUsedDay: t.integer(),
+    mintedTimestamp: t.integer(),
+    streak: t.integer(),
+  }),
+  (table) => ({
+    strengthIndex: index().on(table.strength),
+  })
+);
+
+export const Contribution = onchainTable("contribution", (t) => ({
+  id: t.text().primaryKey(),
+  accountId: t.text().notNull(),
+  canvasId: t.integer().notNull(),
+  pixelsCount: t.integer(),
+}));
+
+export const Usage = onchainTable("usage", (t) => ({
+  id: t.text().primaryKey(),
+  brushId: t.integer().notNull(),
+  canvasId: t.integer().notNull(),
+  pixelsCount: t.integer(),
+}));
+
+export const Stroke = onchainTable(
+  "stroke",
+  (t) => ({
+    id: t.bigint().primaryKey(),
+    canvasId: t.integer().notNull(),
+    accountId: t.text().notNull(),
+    brushId: t.integer().notNull(),
+    data: t.text(),
+    pixels: t.integer(),
+    tx: t.text(),
+    timestamp: t.integer(),
+  }),
+  (table) => ({
+    txIndex: index().on(table.tx),
+  })
+);
+
+export const Withdrawal = onchainTable("withdrawal", (t) => ({
+  id: t.text().primaryKey(),
+  accountId: t.text().notNull(),
+  canvasId: t.integer().notNull(),
+  amount: t.bigint(),
+  timestamp: t.integer(),
+}));
+
+export const Canvas = onchainTable("canvas", (t) => ({
+  id: t.integer().primaryKey(),
+  totalMints: t.integer(),
+  totalBurns: t.integer(),
+  totalEarned: t.bigint(),
+  totalArtists: t.integer(),
+  pixelsCount: t.integer(),
+  name: t.text(),
+  palette: t.text(),
+  size: t.integer(),
+  proposer: t.text(),
+}));
+
+export const Animation = onchainTable("animation", (t) => ({
+  id: t.integer().primaryKey(),
+  totalMints: t.integer(),
+}));
+
+export const Balance = onchainTable(
+  "balance",
+  (t) => ({
+    id: t.text().primaryKey(),
+    ownerId: t.text().notNull(),
+    contract: t.text(),
+    tokenId: t.bigint(),
+    value: t.integer(),
+  }),
+  (table) => ({
+    ownerIndex: index().on(table.ownerId),
+    contractIndex: index().on(table.contract),
+    tokenIdIndex: index().on(table.tokenId),
+  })
+);
+
+export const TotalBalance = onchainTable(
+  "total_balance",
+  (t) => ({
+    id: t.text().primaryKey(),
+    ownerId: t.text().notNull(),
+    contract: t.text(),
+    value: t.integer(),
+  }),
+  (table) => ({
+    ownerIndex: index().on(table.ownerId),
+    contractIndex: index().on(table.contract),
+  })
+);

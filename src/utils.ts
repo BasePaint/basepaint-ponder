@@ -1,6 +1,21 @@
-import { Context, ponder } from "@/generated";
+import { Context, ponder } from "ponder:registry";
+import { Balance, TotalBalance } from "ponder:schema";
+import { eq } from "ponder";
 
-interface TransferSingleEvent {
+export type TransferEvent = {
+  name: "Transfer";
+  args: {
+    from: `0x${string}`;
+    to: `0x${string}`;
+    tokenId?: bigint;
+    id?: bigint;
+    value?: bigint;
+    ids?: readonly bigint[];
+    values?: readonly bigint[];
+  };
+};
+
+export type TransferSingleEvent = {
   name: "TransferSingle";
   args: {
     operator: `0x${string}`;
@@ -9,9 +24,9 @@ interface TransferSingleEvent {
     id: bigint;
     value: bigint;
   };
-}
+};
 
-interface TransferBatchEvent {
+export type TransferBatchEvent = {
   name: "TransferBatch";
   args: {
     operator: `0x${string}`;
@@ -20,77 +35,95 @@ interface TransferBatchEvent {
     ids: readonly bigint[];
     values: readonly bigint[];
   };
-}
-
-interface TransferEvent {
-  name: "Transfer";
-  args: {
-    from: `0x${string}`;
-    to: `0x${string}`;
-    tokenId: bigint;
-  };
-}
+};
 
 export async function trackBalance(
-  contract: `0x${string}`,
+  contract: string,
   event: TransferSingleEvent | TransferBatchEvent | TransferEvent,
-  context: Context
+  context: any
 ) {
-  const { Balance, TotalBalance } = context.db;
+  if (event.name === "TransferSingle") {
+    const fromId = `${contract}_${event.args.from}_${event.args.id}`;
+    const toId = `${contract}_${event.args.to}_${event.args.id}`;
+    const value = Number(event.args.value);
 
-  // prettier-ignore
-  const ids = event.name === "TransferSingle" ? [event.args.id] : event.name === "Transfer" ? [event.args.tokenId] : event.args.ids;
-  // prettier-ignore
-  const values = event.name === "TransferSingle" ? [Number(event.args.value)] : event.name === "Transfer" ? [1] : event.args.values;
-
-  for (let i = 0; i < ids.length; i++) {
-    const id = ids[i]!;
-    const value = Number(values[i]!);
-
-    const fromId = `${contract}_${event.args.from}_${id}`;
-    const toId = `${contract}_${event.args.to}_${id}`;
-
-    if (event.args.from !== "0x0000000000000000000000000000000000000000") {
-      await Balance.update({
-        id: fromId,
-        data: ({ current }) => ({
-          value: current.value - value,
-        }),
-      });
-
-      await TotalBalance.update({
-        id: `${contract}_${event.args.from}`,
-        data: ({ current }) => ({
-          value: current.value - value,
-        }),
-      });
+    if (BigInt(event.args.from) !== 0n) {
+      const fromBalance = await context.db.find(Balance, { id: fromId });
+      if (fromBalance) {
+        await context.db.update(Balance, { id: fromId }).set({
+          value: (fromBalance.value ?? 0) - value,
+        });
+      }
     }
 
-    if (event.args.to !== "0x0000000000000000000000000000000000000000") {
-      await Balance.upsert({
-        id: toId,
-        create: {
-          ownerId: event.args.to,
-          contract,
-          tokenId: id,
-          value,
-        },
-        update: ({ current }) => ({
-          value: current.value + value,
-        }),
-      });
+    if (BigInt(event.args.to) !== 0n) {
+      const toBalance = await context.db.find(Balance, { id: toId });
+      if (toBalance) {
+        await context.db.update(Balance, { id: toId }).set({
+          value: (toBalance.value ?? 0) + value,
+        });
+      }
+    }
 
-      await TotalBalance.upsert({
-        id: `${contract}_${event.args.to}`,
-        create: {
-          ownerId: event.args.to,
-          contract,
-          value,
-        },
-        update: ({ current }) => ({
-          value: current.value + value,
-        }),
-      });
+    if (BigInt(event.args.from) !== 0n) {
+      const fromTotalBalance = await context.db.find(TotalBalance, { id: `${contract}_${event.args.from}` });
+      if (fromTotalBalance) {
+        await context.db.update(TotalBalance, { id: `${contract}_${event.args.from}` }).set({
+          value: (fromTotalBalance.value ?? 0) - value,
+        });
+      }
+    }
+
+    if (BigInt(event.args.to) !== 0n) {
+      const toTotalBalance = await context.db.find(TotalBalance, { id: `${contract}_${event.args.to}` });
+      if (toTotalBalance) {
+        await context.db.update(TotalBalance, { id: `${contract}_${event.args.to}` }).set({
+          value: (toTotalBalance.value ?? 0) + value,
+        });
+      }
+    }
+  } else if (event.name === "TransferBatch") {
+    for (let i = 0; i < event.args.ids.length; i++) {
+      const id = event.args.ids[i];
+      const value = Number(event.args.values[i]);
+      const fromId = `${contract}_${event.args.from}_${id}`;
+      const toId = `${contract}_${event.args.to}_${id}`;
+
+      if (BigInt(event.args.from) !== 0n) {
+        const fromBalance = await context.db.find(Balance, { id: fromId });
+        if (fromBalance) {
+          await context.db.update(Balance, { id: fromId }).set({
+            value: (fromBalance.value ?? 0) - value,
+          });
+        }
+      }
+
+      if (BigInt(event.args.to) !== 0n) {
+        const toBalance = await context.db.find(Balance, { id: toId });
+        if (toBalance) {
+          await context.db.update(Balance, { id: toId }).set({
+            value: (toBalance.value ?? 0) + value,
+          });
+        }
+      }
+
+      if (BigInt(event.args.from) !== 0n) {
+        const fromTotalBalance = await context.db.find(TotalBalance, { id: `${contract}_${event.args.from}` });
+        if (fromTotalBalance) {
+          await context.db.update(TotalBalance, { id: `${contract}_${event.args.from}` }).set({
+            value: (fromTotalBalance.value ?? 0) - value,
+          });
+        }
+      }
+
+      if (BigInt(event.args.to) !== 0n) {
+        const toTotalBalance = await context.db.find(TotalBalance, { id: `${contract}_${event.args.to}` });
+        if (toTotalBalance) {
+          await context.db.update(TotalBalance, { id: `${contract}_${event.args.to}` }).set({
+            value: (toTotalBalance.value ?? 0) + value,
+          });
+        }
+      }
     }
   }
 }
