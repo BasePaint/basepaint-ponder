@@ -1,4 +1,4 @@
-import { onchainTable, index } from "ponder";
+import { onchainTable, index, relations } from "ponder";
 
 export const Global = onchainTable("global", (t) => ({
   id: t.integer().primaryKey(),
@@ -23,6 +23,15 @@ export const Account = onchainTable("account", (t) => ({
   lastPaintedDay: t.integer(),
 }));
 
+export const AccountRelations = relations(Account, ({ many }) => ({
+  brushes: many(Brush),
+  contributions: many(Contribution),
+  strokes: many(Stroke),
+  withdrawals: many(Withdrawal),
+  balances: many(Balance),
+  totalBalances: many(TotalBalance),
+}));
+
 export const Brush = onchainTable(
   "brush",
   (t) => ({
@@ -39,6 +48,12 @@ export const Brush = onchainTable(
   })
 );
 
+export const BrushRelations = relations(Brush, ({ one, many }) => ({
+  owner: one(Account, { fields: [Brush.ownerId], references: [Account.id] }),
+  usages: many(Usage),
+  strokes: many(Stroke),
+}));
+
 export const Contribution = onchainTable("contribution", (t) => ({
   id: t.text().primaryKey(),
   accountId: t.text().notNull(),
@@ -46,11 +61,21 @@ export const Contribution = onchainTable("contribution", (t) => ({
   pixelsCount: t.integer(),
 }));
 
+export const ContributionRelations = relations(Contribution, ({ one }) => ({
+  account: one(Account, { fields: [Contribution.accountId], references: [Account.id] }),
+  canvas: one(Canvas, { fields: [Contribution.canvasId], references: [Canvas.id] }),
+}));
+
 export const Usage = onchainTable("usage", (t) => ({
   id: t.text().primaryKey(),
   brushId: t.integer().notNull(),
   canvasId: t.integer().notNull(),
   pixelsCount: t.integer(),
+}));
+
+export const UsageRelations = relations(Usage, ({ one }) => ({
+  brush: one(Brush, { fields: [Usage.brushId], references: [Brush.id] }),
+  canvas: one(Canvas, { fields: [Usage.canvasId], references: [Canvas.id] }),
 }));
 
 export const Stroke = onchainTable(
@@ -70,12 +95,23 @@ export const Stroke = onchainTable(
   })
 );
 
+export const StrokeRelations = relations(Stroke, ({ one }) => ({
+  canvas: one(Canvas, { fields: [Stroke.canvasId], references: [Canvas.id] }),
+  account: one(Account, { fields: [Stroke.accountId], references: [Account.id] }),
+  brush: one(Brush, { fields: [Stroke.brushId], references: [Brush.id] }),
+}));
+
 export const Withdrawal = onchainTable("withdrawal", (t) => ({
   id: t.text().primaryKey(),
   accountId: t.text().notNull(),
   canvasId: t.integer().notNull(),
   amount: t.bigint(),
   timestamp: t.integer(),
+}));
+
+export const WithdrawalRelations = relations(Withdrawal, ({ one }) => ({
+  account: one(Account, { fields: [Withdrawal.accountId], references: [Account.id] }),
+  canvas: one(Canvas, { fields: [Withdrawal.canvasId], references: [Canvas.id] }),
 }));
 
 export const Canvas = onchainTable("canvas", (t) => ({
@@ -89,6 +125,13 @@ export const Canvas = onchainTable("canvas", (t) => ({
   palette: t.text(),
   size: t.integer(),
   proposer: t.text(),
+}));
+
+export const CanvasRelations = relations(Canvas, ({ many }) => ({
+  contributions: many(Contribution),
+  usages: many(Usage),
+  strokes: many(Stroke),
+  withdrawals: many(Withdrawal),
 }));
 
 export const Animation = onchainTable("animation", (t) => ({
@@ -112,6 +155,10 @@ export const Balance = onchainTable(
   })
 );
 
+export const BalanceRelations = relations(Balance, ({ one }) => ({
+  owner: one(Account, { fields: [Balance.ownerId], references: [Account.id] }),
+}));
+
 export const TotalBalance = onchainTable(
   "total_balance",
   (t) => ({
@@ -125,3 +172,7 @@ export const TotalBalance = onchainTable(
     contractIndex: index().on(table.contract),
   })
 );
+
+export const TotalBalanceRelations = relations(TotalBalance, ({ one }) => ({
+  owner: one(Account, { fields: [TotalBalance.ownerId], references: [Account.id] }),
+}));
