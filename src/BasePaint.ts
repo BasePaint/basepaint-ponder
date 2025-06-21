@@ -1,51 +1,43 @@
-import { ponder } from "@/generated";
+import { ponder } from "ponder:registry";
+import { Global, Canvas, Brush, Contribution, Account, Usage, Stroke, Withdrawal } from "ponder:schema";
+import { eq } from "ponder";
 import { trackBalance } from "./utils";
 
 ponder.on("BasePaint:setup", async ({ context }) => {
-  const { Global } = context.db;
-
-  await Global.create({
+  await context.db.insert(Global).values({
     id: 1,
-    data: {
-      startedAt: 0,
-      epochDuration: 0,
-      totalArtists: 0,
-      totalPixels: 0,
-      totalEarnings: 0n,
-      totalWithdrawals: 0n,
-      totalMints: 0,
-      totalBurns: 0,
-      totalSubscriptions: 0,
-    },
+    startedAt: 0,
+    epochDuration: 0,
+    totalArtists: 0,
+    totalPixels: 0,
+    totalEarnings: 0n,
+    totalWithdrawals: 0n,
+    totalMints: 0,
+    totalBurns: 0,
+    totalSubscriptions: 0,
   });
 });
 
 ponder.on("BasePaint:Started", async ({ event, context }) => {
-  const { Global } = context.db;
   const epochDuration = await context.client.readContract({
     abi: context.contracts.BasePaint.abi,
     address: context.contracts.BasePaint.address,
     functionName: "epochDuration",
   });
 
-  await Global.update({
-    id: 1,
-    data: {
-      startedAt: Number(event.block.timestamp),
-      epochDuration: Number(epochDuration),
-    },
+  await context.db.update(Global, { id: 1 }).set({
+    startedAt: Number(event.block.timestamp),
+    epochDuration: Number(epochDuration),
   });
 });
 
 ponder.on("BasePaint:Painted", async ({ event, context }) => {
-  const { Canvas, Brush, Contribution, Account, Usage, Stroke, Global } = context.db;
-
   const day = Number(event.args.day);
   const pixelsContributed = Math.floor((event.args.pixels.length - 2) / 6);
 
-  const brush = await Brush.findUnique({ id: Number(event.args.tokenId) });
+  const brush = await context.db.find(Brush, { id: Number(event.args.tokenId) });
   if (brush) {
-    let streak = brush.streak;
+    let streak = brush.streak ?? 0;
 
     if (brush.lastUsedDay === Number(event.args.day) - 1) {
       streak += 1;
@@ -54,238 +46,211 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
       streak = 1;
     }
 
-    await Brush.update({
-      id: Number(event.args.tokenId),
-      data: {
-        lastUsedDay: Number(event.args.day),
-        lastUsedTimestamp: Number(event.block.timestamp),
-        streak,
-      },
+    await context.db.update(Brush, { id: Number(event.args.tokenId) }).set({
+      lastUsedDay: Number(event.args.day),
+      lastUsedTimestamp: Number(event.block.timestamp),
+      streak,
     });
   }
 
-  const canvas = await Canvas.findUnique({ id: Number(event.args.day) });
+  const canvas = await context.db.find(Canvas, { id: Number(event.args.day) });
   if (!canvas) {
-    const previousCanvas = await Canvas.findUnique({ id: Number(event.args.day) - 2 });
+    const previousCanvas = await context.db.find(Canvas, { id: Number(event.args.day) - 2 });
     if (previousCanvas) {
-      let cursor: string | undefined;
-      do {
-        const contributions = await Contribution.findMany({
-          where: {
-            canvasId: previousCanvas.id,
-          },
-          after: cursor,
-          limit: 1000,
-        });
-        for (const contribution of contributions.items) {
-          const earnings =
-            (BigInt(contribution.pixelsCount) * previousCanvas.totalEarned) / BigInt(previousCanvas.pixelsCount);
-          await Account.update({
-            id: contribution.accountId,
-            data: ({ current }) => ({
-              totalEarned: current.totalEarned + earnings,
-            }),
+      const contributions = await context.db.sql
+        .select()
+        .from(Contribution)
+        .where(eq(Contribution.canvasId, previousCanvas.id));
+
+      for (const contribution of contributions) {
+        const earnings =
+          (BigInt(contribution.pixelsCount ?? 0) * (previousCanvas.totalEarned ?? 0n)) /
+          BigInt(previousCanvas.pixelsCount ?? 1);
+        const account = await context.db.find(Account, { id: contribution.accountId });
+        if (account) {
+          await context.db.update(Account, { id: contribution.accountId }).set({
+            totalEarned: (account.totalEarned ?? 0n) + earnings,
           });
         }
-        cursor = contributions.pageInfo.endCursor ?? undefined;
-      } while (cursor);
+      }
     }
   }
 
   const contributionId = `${event.args.day}_${event.args.author}`;
-  const contribution = await Contribution.findUnique({ id: contributionId });
-  await Contribution.upsert({
-    id: contributionId,
-    create: {
+  const contribution = await context.db.find(Contribution, { id: contributionId });
+  await context.db
+    .insert(Contribution)
+    .values({
+      id: contributionId,
       canvasId: day,
       accountId: event.args.author,
       pixelsCount: pixelsContributed,
-    },
-    update: ({ current }) => ({
-      pixelsCount: current.pixelsCount + pixelsContributed,
-    }),
-  });
+    })
+    .onConflictDoUpdate((row) => ({
+      pixelsCount: (row.pixelsCount ?? 0) + pixelsContributed,
+    }));
 
-  await Canvas.upsert({
-    id: day,
-    create: {
+  await context.db
+    .insert(Canvas)
+    .values({
+      id: day,
       totalMints: 0,
       totalBurns: 0,
       totalEarned: 0n,
       pixelsCount: pixelsContributed,
       totalArtists: 1,
-    },
-    update: ({ current }) => ({
-      pixelsCount: current.pixelsCount + pixelsContributed,
-      totalArtists: contribution === null ? current.totalArtists + 1 : current.totalArtists,
-    }),
-  });
+    })
+    .onConflictDoUpdate((row) => ({
+      pixelsCount: (row.pixelsCount ?? 0) + pixelsContributed,
+      totalArtists: contribution === null ? (row.totalArtists ?? 0) + 1 : row.totalArtists,
+    }));
 
   const usageId = `${event.args.day}_${event.args.tokenId}`;
-  await Usage.upsert({
-    id: usageId,
-    create: {
+  await context.db
+    .insert(Usage)
+    .values({
+      id: usageId,
       canvasId: day,
       brushId: Number(event.args.tokenId),
       pixelsCount: pixelsContributed,
-    },
-    update: ({ current }) => ({
-      pixelsCount: current.pixelsCount + pixelsContributed,
-    }),
-  });
+    })
+    .onConflictDoUpdate((row) => ({
+      pixelsCount: (row.pixelsCount ?? 0) + pixelsContributed,
+    }));
 
-  const account = await Account.findUnique({ id: event.args.author });
-  await Account.update({
-    id: event.args.author,
-    data: ({ current }) => {
-      let streak = current.streak;
+  const account = await context.db.find(Account, { id: event.args.author });
+  if (account) {
+    let streak = account.streak ?? 0;
 
-      if (current.lastPaintedDay === day - 1) {
-        streak += 1;
-      }
+    if (account.lastPaintedDay === day - 1) {
+      streak += 1;
+    }
 
-      if (current.lastPaintedDay == null || current.lastPaintedDay < day - 1) {
-        streak = 1;
-      }
+    if (account.lastPaintedDay == null || account.lastPaintedDay < day - 1) {
+      streak = 1;
+    }
 
-      return {
-        streak,
-        longestStreak: Math.max(current.longestStreak, streak),
-        lastPaintedDay: day,
-        totalPixels: current.totalPixels + pixelsContributed,
-      };
-    },
-  });
-
-  await Stroke.create({
-    id: event.block.number * 100_000n + BigInt(event.log.logIndex),
-    data: {
-      canvasId: day,
-      accountId: event.args.author,
-      brushId: Number(event.args.tokenId),
-      data: event.args.pixels,
-      pixels: pixelsContributed,
-      tx: event.transaction.hash,
-      timestamp: Number(event.block.timestamp),
-    },
-  });
-
-  await Global.update({
-    id: 1,
-    data: ({ current }) => ({
-      totalPixels: current.totalPixels + pixelsContributed,
-      totalArtists: account && account.totalPixels > 0 ? current.totalArtists : current.totalArtists + 1,
-    }),
-  });
-});
-
-ponder.on("BasePaint:ArtistsEarned", async ({ event, context }) => {
-  const { Canvas, Global } = context.db;
-
-  await Canvas.update({
-    id: Number(event.args.day),
-    data: ({ current }) => ({
-      totalEarned: current.totalEarned + event.args.amount,
-    }),
-  });
-
-  await Global.update({
-    id: 1,
-    data: ({ current }) => ({
-      totalEarnings: current.totalEarnings + event.args.amount,
-    }),
-  });
-});
-
-ponder.on("BasePaint:ArtistWithdraw", async ({ event, context }) => {
-  const { Withdrawal, Account, Global } = context.db;
-
-  await Account.update({
-    id: event.args.author,
-    data: ({ current }) => ({
-      totalWithdrawn: current.totalWithdrawn + event.args.amount,
-    }),
-  });
-
-  await Withdrawal.create({
-    id: event.args.day + "_" + event.args.author,
-    data: {
-      canvasId: Number(event.args.day),
-      accountId: event.args.author,
-      amount: event.args.amount,
-      timestamp: Number(event.block.timestamp),
-    },
-  });
-
-  await Global.update({
-    id: 1,
-    data: ({ current }) => ({
-      totalWithdrawals: current.totalWithdrawals + event.args.amount,
-    }),
-  });
-});
-
-ponder.on("BasePaint:TransferSingle", async ({ event, context }) => {
-  await trackBalance(context.contracts.BasePaint.address, event, context);
-
-  const { Canvas, Global } = context.db;
-
-  if (BigInt(event.args.from) === 0n) {
-    await Canvas.update({
-      id: Number(event.args.id),
-      data: ({ current }) => ({
-        totalMints: current.totalMints + Number(event.args.value),
-      }),
+    await context.db.update(Account, { id: event.args.author }).set({
+      streak,
+      longestStreak: Math.max(account.longestStreak ?? 0, streak),
+      lastPaintedDay: day,
+      totalPixels: (account.totalPixels ?? 0) + pixelsContributed,
     });
+  }
 
-    await Global.update({
-      id: 1,
-      data: ({ current }) => ({
-        totalMints: current.totalMints + Number(event.args.value),
-      }),
+  await context.db.insert(Stroke).values({
+    id: event.block.number * 100_000n + BigInt(event.log.logIndex),
+    canvasId: day,
+    accountId: event.args.author,
+    brushId: Number(event.args.tokenId),
+    data: event.args.pixels,
+    pixels: pixelsContributed,
+    tx: event.transaction.hash,
+    timestamp: Number(event.block.timestamp),
+  });
+
+  const global = await context.db.find(Global, { id: 1 });
+  if (global) {
+    await context.db.update(Global, { id: 1 }).set({
+      totalPixels: (global.totalPixels ?? 0) + pixelsContributed,
+      totalArtists: account && (account.totalPixels ?? 0) > 0 ? global.totalArtists : (global.totalArtists ?? 0) + 1,
     });
   }
 });
 
-ponder.on("BasePaint:TransferBatch", async ({ event, context }) => {
-  await trackBalance(context.contracts.BasePaint.address, event, context);
+ponder.on("BasePaint:ArtistsEarned", async ({ event, context }) => {
+  const canvas = await context.db.find(Canvas, { id: Number(event.args.day) });
+  if (canvas) {
+    await context.db.update(Canvas, { id: Number(event.args.day) }).set({
+      totalEarned: (canvas.totalEarned ?? 0n) + event.args.amount,
+    });
+  }
 
-  const { Canvas, Global } = context.db;
+  const global = await context.db.find(Global, { id: 1 });
+  if (global) {
+    await context.db.update(Global, { id: 1 }).set({
+      totalEarnings: (global.totalEarnings ?? 0n) + event.args.amount,
+    });
+  }
+});
 
-  for (let i = 0; i < event.args.ids.length; i++) {
-    if (BigInt(event.args.from) === 0n) {
-      const id = event.args.ids[i];
-      const value = event.args.values[i];
-      await Canvas.update({
-        id: Number(id),
-        data: ({ current }) => ({
-          totalMints: current.totalMints + Number(value),
-        }),
-      });
+ponder.on("BasePaint:ArtistWithdraw", async ({ event, context }) => {
+  const account = await context.db.find(Account, { id: event.args.author });
+  if (account) {
+    await context.db.update(Account, { id: event.args.author }).set({
+      totalWithdrawn: (account.totalWithdrawn ?? 0n) + event.args.amount,
+    });
+  }
 
-      await Global.update({
-        id: 1,
-        data: ({ current }) => ({
-          totalMints: current.totalMints + Number(value),
-        }),
+  await context.db.insert(Withdrawal).values({
+    id: event.args.day + "_" + event.args.author,
+    canvasId: Number(event.args.day),
+    accountId: event.args.author,
+    amount: event.args.amount,
+    timestamp: Number(event.block.timestamp),
+  });
+
+  const global = await context.db.find(Global, { id: 1 });
+  if (global) {
+    await context.db.update(Global, { id: 1 }).set({
+      totalWithdrawals: (global.totalWithdrawals ?? 0n) + event.args.amount,
+    });
+  }
+});
+
+ponder.on("BasePaint:TransferSingle", async ({ event, context }) => {
+  // Track balance changes
+  await trackBalance("0xBa5e05cb26b78eDa3A2f8e3b3814726305dcAc83", event, context);
+
+  const canvas = await context.db.find(Canvas, { id: Number(event.args.id) });
+  if (BigInt(event.args.from) === 0n && canvas) {
+    await context.db.update(Canvas, { id: Number(event.args.id) }).set({
+      totalMints: (canvas.totalMints ?? 0) + Number(event.args.value),
+    });
+
+    const global = await context.db.find(Global, { id: 1 });
+    if (global) {
+      await context.db.update(Global, { id: 1 }).set({
+        totalMints: (global.totalMints ?? 0) + Number(event.args.value),
       });
     }
   }
 });
 
+ponder.on("BasePaint:TransferBatch", async ({ event, context }) => {
+  // Track balance changes
+  await trackBalance("0xBa5e05cb26b78eDa3A2f8e3b3814726305dcAc83", event, context);
+
+  for (let i = 0; i < event.args.ids.length; i++) {
+    if (BigInt(event.args.from) === 0n) {
+      const id = event.args.ids[i];
+      const value = event.args.values[i];
+      const canvas = await context.db.find(Canvas, { id: Number(id) });
+      if (canvas) {
+        await context.db.update(Canvas, { id: Number(id) }).set({
+          totalMints: (canvas.totalMints ?? 0) + Number(value),
+        });
+      }
+
+      const global = await context.db.find(Global, { id: 1 });
+      if (global) {
+        await context.db.update(Global, { id: 1 }).set({
+          totalMints: (global.totalMints ?? 0) + Number(value),
+        });
+      }
+    }
+  }
+});
+
 ponder.on("BasePaintMetadataRegistry:MetadataUpdated", async ({ event, context }) => {
-  const { Canvas } = context.db;
-  const canvas = await Canvas.findUnique({ id: Number(event.args.id) });
+  const canvas = await context.db.find(Canvas, { id: Number(event.args.id) });
 
   if (canvas) {
-    await Canvas.update({
-      id: Number(event.args.id),
-      data: {
-        name: event.args.name,
-        palette: event.args.palette.map((color) => "#" + color.toString(16).padStart(6, "0").toUpperCase()).join(","),
-        size: Number(event.args.size),
-        proposer: event.args.proposer,
-      },
+    await context.db.update(Canvas, { id: Number(event.args.id) }).set({
+      name: event.args.name,
+      palette: event.args.palette.map((color) => "#" + color.toString(16).padStart(6, "0").toUpperCase()).join(","),
+      size: Number(event.args.size),
+      proposer: event.args.proposer,
     });
   }
 });

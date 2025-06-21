@@ -1,96 +1,200 @@
-import { Context, ponder } from "@/generated";
+import { Context, Event } from "ponder:registry";
+import { Balance, TotalBalance } from "ponder:schema";
 
-interface TransferSingleEvent {
-  name: "TransferSingle";
-  args: {
-    operator: `0x${string}`;
-    from: `0x${string}`;
-    to: `0x${string}`;
-    id: bigint;
-    value: bigint;
-  };
-}
+export async function trackBalance(contract: string, event: Event, context: Context) {
+  // Determine event type based on event structure
+  if ("tokenId" in event.args && "from" in event.args && "to" in event.args) {
+    // Handle ERC721 transfers
+    const tokenId = event.args.tokenId;
+    const fromId = `${contract}_${event.args.from}_${tokenId}`;
+    const toId = `${contract}_${event.args.to}_${tokenId}`;
+    const value = 1; // ERC721 tokens have value of 1
 
-interface TransferBatchEvent {
-  name: "TransferBatch";
-  args: {
-    operator: `0x${string}`;
-    from: `0x${string}`;
-    to: `0x${string}`;
-    ids: readonly bigint[];
-    values: readonly bigint[];
-  };
-}
-
-interface TransferEvent {
-  name: "Transfer";
-  args: {
-    from: `0x${string}`;
-    to: `0x${string}`;
-    tokenId: bigint;
-  };
-}
-
-export async function trackBalance(
-  contract: `0x${string}`,
-  event: TransferSingleEvent | TransferBatchEvent | TransferEvent,
-  context: Context
-) {
-  const { Balance, TotalBalance } = context.db;
-
-  // prettier-ignore
-  const ids = event.name === "TransferSingle" ? [event.args.id] : event.name === "Transfer" ? [event.args.tokenId] : event.args.ids;
-  // prettier-ignore
-  const values = event.name === "TransferSingle" ? [Number(event.args.value)] : event.name === "Transfer" ? [1] : event.args.values;
-
-  for (let i = 0; i < ids.length; i++) {
-    const id = ids[i]!;
-    const value = Number(values[i]!);
-
-    const fromId = `${contract}_${event.args.from}_${id}`;
-    const toId = `${contract}_${event.args.to}_${id}`;
-
-    if (event.args.from !== "0x0000000000000000000000000000000000000000") {
-      await Balance.update({
-        id: fromId,
-        data: ({ current }) => ({
-          value: current.value - value,
-        }),
-      });
-
-      await TotalBalance.update({
-        id: `${contract}_${event.args.from}`,
-        data: ({ current }) => ({
-          value: current.value - value,
-        }),
-      });
+    if (BigInt(event.args.from) !== 0n) {
+      await context.db
+        .insert(Balance)
+        .values({
+          id: fromId,
+          ownerId: event.args.from,
+          contract,
+          tokenId,
+          value: -value,
+        })
+        .onConflictDoUpdate((row) => ({
+          value: (row.value ?? 0) - value,
+        }));
     }
 
-    if (event.args.to !== "0x0000000000000000000000000000000000000000") {
-      await Balance.upsert({
-        id: toId,
-        create: {
+    if (BigInt(event.args.to) !== 0n) {
+      await context.db
+        .insert(Balance)
+        .values({
+          id: toId,
           ownerId: event.args.to,
           contract,
-          tokenId: id,
+          tokenId,
           value,
-        },
-        update: ({ current }) => ({
-          value: current.value + value,
-        }),
-      });
+        })
+        .onConflictDoUpdate((row) => ({
+          value: (row.value ?? 0) + value,
+        }));
+    }
 
-      await TotalBalance.upsert({
-        id: `${contract}_${event.args.to}`,
-        create: {
+    if (BigInt(event.args.from) !== 0n) {
+      await context.db
+        .insert(TotalBalance)
+        .values({
+          id: `${contract}_${event.args.from}`,
+          ownerId: event.args.from,
+          contract,
+          value: -value,
+        })
+        .onConflictDoUpdate((row) => ({
+          value: (row.value ?? 0) - value,
+        }));
+    }
+
+    if (BigInt(event.args.to) !== 0n) {
+      await context.db
+        .insert(TotalBalance)
+        .values({
+          id: `${contract}_${event.args.to}`,
           ownerId: event.args.to,
           contract,
           value,
-        },
-        update: ({ current }) => ({
-          value: current.value + value,
-        }),
-      });
+        })
+        .onConflictDoUpdate((row) => ({
+          value: (row.value ?? 0) + value,
+        }));
+    }
+  } else if ("id" in event.args && "value" in event.args && "from" in event.args && "to" in event.args) {
+    // Handle ERC1155 single transfers
+    const fromId = `${contract}_${event.args.from}_${event.args.id}`;
+    const toId = `${contract}_${event.args.to}_${event.args.id}`;
+    const value = Number(event.args.value);
+
+    if (BigInt(event.args.from) !== 0n) {
+      await context.db
+        .insert(Balance)
+        .values({
+          id: fromId,
+          ownerId: event.args.from,
+          contract,
+          tokenId: event.args.id,
+          value: -value,
+        })
+        .onConflictDoUpdate((row) => ({
+          value: (row.value ?? 0) - value,
+        }));
+    }
+
+    if (BigInt(event.args.to) !== 0n) {
+      await context.db
+        .insert(Balance)
+        .values({
+          id: toId,
+          ownerId: event.args.to,
+          contract,
+          tokenId: event.args.id,
+          value,
+        })
+        .onConflictDoUpdate((row) => ({
+          value: (row.value ?? 0) + value,
+        }));
+    }
+
+    if (BigInt(event.args.from) !== 0n) {
+      await context.db
+        .insert(TotalBalance)
+        .values({
+          id: `${contract}_${event.args.from}`,
+          ownerId: event.args.from,
+          contract,
+          value: -value,
+        })
+        .onConflictDoUpdate((row) => ({
+          value: (row.value ?? 0) - value,
+        }));
+    }
+
+    if (BigInt(event.args.to) !== 0n) {
+      await context.db
+        .insert(TotalBalance)
+        .values({
+          id: `${contract}_${event.args.to}`,
+          ownerId: event.args.to,
+          contract,
+          value,
+        })
+        .onConflictDoUpdate((row) => ({
+          value: (row.value ?? 0) + value,
+        }));
+    }
+  } else if ("ids" in event.args && "values" in event.args && "from" in event.args && "to" in event.args) {
+    // Handle ERC1155 batch transfers
+    for (let i = 0; i < event.args.ids.length; i++) {
+      const id = event.args.ids[i]!;
+      const value = Number(event.args.values[i]);
+      const fromId = `${contract}_${event.args.from}_${id}`;
+      const toId = `${contract}_${event.args.to}_${id}`;
+
+      if (BigInt(event.args.from) !== 0n) {
+        await context.db
+          .insert(Balance)
+          .values({
+            id: fromId,
+            ownerId: event.args.from,
+            contract,
+            tokenId: id,
+            value: -value,
+          })
+          .onConflictDoUpdate((row) => ({
+            value: (row.value ?? 0) - value,
+          }));
+      }
+
+      if (BigInt(event.args.to) !== 0n) {
+        await context.db
+          .insert(Balance)
+          .values({
+            id: toId,
+            ownerId: event.args.to,
+            contract,
+            tokenId: id,
+            value,
+          })
+          .onConflictDoUpdate((row) => ({
+            value: (row.value ?? 0) + value,
+          }));
+      }
+
+      if (BigInt(event.args.from) !== 0n) {
+        await context.db
+          .insert(TotalBalance)
+          .values({
+            id: `${contract}_${event.args.from}`,
+            ownerId: event.args.from,
+            contract,
+            value: -value,
+          })
+          .onConflictDoUpdate((row) => ({
+            value: (row.value ?? 0) - value,
+          }));
+      }
+
+      if (BigInt(event.args.to) !== 0n) {
+        await context.db
+          .insert(TotalBalance)
+          .values({
+            id: `${contract}_${event.args.to}`,
+            ownerId: event.args.to,
+            contract,
+            value,
+          })
+          .onConflictDoUpdate((row) => ({
+            value: (row.value ?? 0) + value,
+          }));
+      }
     }
   }
 }
