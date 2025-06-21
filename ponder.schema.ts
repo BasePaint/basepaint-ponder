@@ -2,24 +2,24 @@ import { onchainTable, index, relations } from "ponder";
 
 export const Global = onchainTable("global", (t) => ({
   id: t.integer().primaryKey(),
-  startedAt: t.integer(),
-  epochDuration: t.integer(),
-  totalArtists: t.integer(),
-  totalPixels: t.integer(),
-  totalEarnings: t.bigint(),
-  totalWithdrawals: t.bigint(),
-  totalMints: t.integer(),
-  totalBurns: t.integer(),
-  totalSubscriptions: t.integer(),
+  startedAt: t.integer().notNull(),
+  epochDuration: t.integer().notNull(),
+  totalArtists: t.integer().notNull(),
+  totalPixels: t.integer().notNull(),
+  totalEarnings: t.bigint().notNull(),
+  totalWithdrawals: t.bigint().notNull(),
+  totalMints: t.integer().notNull(),
+  totalBurns: t.integer().notNull(),
+  totalSubscriptions: t.integer().notNull(),
 }));
 
 export const Account = onchainTable("account", (t) => ({
   id: t.text().primaryKey(),
-  totalPixels: t.integer(),
-  totalWithdrawn: t.bigint(),
-  totalEarned: t.bigint(),
-  streak: t.integer(),
-  longestStreak: t.integer(),
+  totalPixels: t.integer().notNull(),
+  totalWithdrawn: t.bigint().notNull(),
+  totalEarned: t.bigint().notNull(),
+  streak: t.integer().notNull(),
+  longestStreak: t.integer().notNull(),
   lastPaintedDay: t.integer(),
 }));
 
@@ -37,11 +37,11 @@ export const Brush = onchainTable(
   (t) => ({
     id: t.integer().primaryKey(),
     ownerId: t.text().notNull(),
-    strength: t.integer(),
+    strength: t.integer().notNull(),
     lastUsedTimestamp: t.integer(),
     lastUsedDay: t.integer(),
-    mintedTimestamp: t.integer(),
-    streak: t.integer(),
+    mintedTimestamp: t.integer().notNull(),
+    streak: t.integer().notNull(),
   }),
   (table) => ({
     strengthIndex: index().on(table.strength),
@@ -58,7 +58,7 @@ export const Contribution = onchainTable("contribution", (t) => ({
   id: t.text().primaryKey(),
   accountId: t.text().notNull(),
   canvasId: t.integer().notNull(),
-  pixelsCount: t.integer(),
+  pixelsCount: t.integer().notNull(),
 }));
 
 export const ContributionRelations = relations(Contribution, ({ one }) => ({
@@ -70,7 +70,7 @@ export const Usage = onchainTable("usage", (t) => ({
   id: t.text().primaryKey(),
   brushId: t.integer().notNull(),
   canvasId: t.integer().notNull(),
-  pixelsCount: t.integer(),
+  pixelsCount: t.integer().notNull(),
 }));
 
 export const UsageRelations = relations(Usage, ({ one }) => ({
@@ -85,10 +85,10 @@ export const Stroke = onchainTable(
     canvasId: t.integer().notNull(),
     accountId: t.text().notNull(),
     brushId: t.integer().notNull(),
-    data: t.text(),
-    pixels: t.integer(),
-    tx: t.text(),
-    timestamp: t.integer(),
+    data: t.text().notNull(),
+    pixels: t.integer().notNull(),
+    tx: t.text().notNull(),
+    timestamp: t.integer().notNull(),
   }),
   (table) => ({
     txIndex: index().on(table.tx),
@@ -105,8 +105,8 @@ export const Withdrawal = onchainTable("withdrawal", (t) => ({
   id: t.text().primaryKey(),
   accountId: t.text().notNull(),
   canvasId: t.integer().notNull(),
-  amount: t.bigint(),
-  timestamp: t.integer(),
+  amount: t.bigint().notNull(),
+  timestamp: t.integer().notNull(),
 }));
 
 export const WithdrawalRelations = relations(Withdrawal, ({ one }) => ({
@@ -116,11 +116,11 @@ export const WithdrawalRelations = relations(Withdrawal, ({ one }) => ({
 
 export const Canvas = onchainTable("canvas", (t) => ({
   id: t.integer().primaryKey(),
-  totalMints: t.integer(),
-  totalBurns: t.integer(),
-  totalEarned: t.bigint(),
-  totalArtists: t.integer(),
-  pixelsCount: t.integer(),
+  totalMints: t.integer().notNull(),
+  totalBurns: t.integer().notNull(),
+  totalEarned: t.bigint().notNull(),
+  totalArtists: t.integer().notNull(),
+  pixelsCount: t.integer().notNull(),
   name: t.text(),
   palette: t.text(),
   size: t.integer(),
@@ -136,7 +136,7 @@ export const CanvasRelations = relations(Canvas, ({ many }) => ({
 
 export const Animation = onchainTable("animation", (t) => ({
   id: t.integer().primaryKey(),
-  totalMints: t.integer(),
+  totalMints: t.integer().notNull(),
 }));
 
 export const Balance = onchainTable(
@@ -144,9 +144,9 @@ export const Balance = onchainTable(
   (t) => ({
     id: t.text().primaryKey(),
     ownerId: t.text().notNull(),
-    contract: t.text(),
-    tokenId: t.bigint(),
-    value: t.integer(),
+    contract: t.text().notNull(),
+    tokenId: t.bigint().notNull(),
+    value: t.integer().notNull(),
   }),
   (table) => ({
     ownerIndex: index().on(table.ownerId),
@@ -164,8 +164,8 @@ export const TotalBalance = onchainTable(
   (t) => ({
     id: t.text().primaryKey(),
     ownerId: t.text().notNull(),
-    contract: t.text(),
-    value: t.integer(),
+    contract: t.text().notNull(),
+    value: t.integer().notNull(),
   }),
   (table) => ({
     ownerIndex: index().on(table.ownerId),

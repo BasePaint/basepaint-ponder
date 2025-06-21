@@ -133,7 +133,7 @@ export async function trackBalance(contract: string, event: Event, context: Cont
   } else if ("ids" in event.args && "values" in event.args && "from" in event.args && "to" in event.args) {
     // Handle ERC1155 batch transfers
     for (let i = 0; i < event.args.ids.length; i++) {
-      const id = event.args.ids[i];
+      const id = event.args.ids[i]!;
       const value = Number(event.args.values[i]);
       const fromId = `${contract}_${event.args.from}_${id}`;
       const toId = `${contract}_${event.args.to}_${id}`;
