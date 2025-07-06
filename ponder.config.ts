@@ -54,9 +54,9 @@ export default createConfig({
     },
     BasePaintMetadataRegistry: {
       abi: BasePaintMetadataRegistryAbi,
-      address: "0xcfb86b6aC2cE09f9A01C39af9Dccf3ecba304F95",
+      address: "0x5104482a2Ef3a03b6270D3e931eac890b86FaD01",
       chain: "base",
-      startBlock: 20724252,
+      startBlock: 21992569,
     },
     BasePaintSubscription: {
       abi: BasePaintSubscriptionAbi,
