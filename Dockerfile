@@ -13,4 +13,7 @@ EXPOSE 42069
 ENV NODE_ENV=production
 ENV PONDER_TELEMETRY_DISABLED=true
 
-CMD [ "npm", "start" ]
+CMD [ "scripts/indexer.sh" ]
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=60m --retries=10 \
+  CMD node scripts/healthcheck.js

@@ -1,84 +1,66 @@
-import { ponder } from "@/generated";
+import { ponder } from "ponder:registry";
+import { Brush, Account } from "ponder:schema";
 import { trackBalance } from "./utils";
 
 ponder.on("BasePaintBrush:Transfer", async ({ event, context }) => {
-  await trackBalance(context.contracts.BasePaint.address, event, context);
+  // Track balance changes
+  await trackBalance("0xD68fe5b53e7E1AbeB5A4d0A6660667791f39263a", event, context);
 
-  const { Brush, Account } = context.db;
-
-  await Brush.upsert({
-    id: Number(event.args.tokenId),
-    create: {
+  await context.db
+    .insert(Brush)
+    .values({
+      id: Number(event.args.tokenId),
       ownerId: event.args.to,
       strength: 0,
       streak: 0,
       mintedTimestamp: Number(event.block.timestamp),
-    },
-    update: {
+    })
+    .onConflictDoUpdate((row) => ({
       ownerId: event.args.to,
-    },
-  });
+    }));
 
-  await Account.upsert({
-    id: event.args.to,
-    create: {
+  await context.db
+    .insert(Account)
+    .values({
+      id: event.args.to,
       totalPixels: 0,
       totalWithdrawn: 0n,
       totalEarned: 0n,
       streak: 0,
       longestStreak: 0,
-    },
-    update: {},
-  });
+    })
+    .onConflictDoUpdate((row) => ({}));
 });
 
 ponder.on("BasePaintBrushEvents:Deployed", async ({ event, context }) => {
-  const { Brush } = context.db;
   const { BasePaintBrush } = context.contracts;
 
   // Reindex all brush strengths to get accurate data for brushes
   // before the BasePaintBrushEvents contract.
-  let cursor: string | undefined | null;
-  while (true) {
-    const brushes = await Brush.findMany({ limit: 100, after: cursor ?? undefined });
+  const brushes = await context.db.sql.select().from(Brush);
 
-    const strengths = await Promise.all(
-      brushes.items.map((brush) =>
-        context.client.readContract({
-          abi: BasePaintBrush.abi,
-          address: BasePaintBrush.address,
-          functionName: "strengths",
-          args: [BigInt(brush.id)],
-        })
-      )
-    );
+  const strengths = await Promise.all(
+    brushes.map((brush) =>
+      context.client.readContract({
+        abi: BasePaintBrush.abi,
+        address: BasePaintBrush.address,
+        functionName: "strengths",
+        args: [BigInt(brush.id)],
+      })
+    )
+  );
 
-    for (const [index, brush] of brushes.items.entries()) {
-      await Brush.update({
-        id: brush.id,
-        data: {
-          strength: Number(strengths[index]),
-        },
-      });
-    }
-
-    if (!brushes.pageInfo.hasNextPage) {
-      break;
-    }
-
-    cursor = brushes.pageInfo.endCursor;
+  for (const [index, brush] of brushes.entries()) {
+    await context.db.update(Brush, { id: brush.id }).set({
+      strength: Number(strengths[index]),
+    });
   }
 
   // From now on, we will listen to StrengthChanged events
 });
 
 ponder.on("BasePaintBrushEvents:StrengthChanged", async ({ event, context }) => {
-  const { Brush } = context.db;
-
-  await Brush.update({
-    id: Number(event.args.tokenId),
-    data: {
-      strength: Number(event.args.strength),
-    },
+  await context.db.update(Brush, { id: Number(event.args.tokenId) }).set({
+    strength: Number(event.args.strength),
   });
 });

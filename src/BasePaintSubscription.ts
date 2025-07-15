@@ -1,10 +1,10 @@
-import { ponder } from "@/generated";
+import { ponder } from "ponder:registry";
+import { Global } from "ponder:schema";
 import { trackBalance } from "./utils";
 
 ponder.on("BasePaintSubscription:TransferSingle", async ({ event, context }) => {
-  await trackBalance(context.contracts.BasePaintSubscription.address, event, context);
-
-  const { Global } = context.db;
+  // Track balance changes
+  await trackBalance("0x75CF063a65d361527180805b244bC51c1deAb075", event, context);
 
   let delta = 0;
 
@@ -18,18 +18,17 @@ ponder.on("BasePaintSubscription:TransferSingle", async ({ event, context }) => 
     return;
   }
 
-  await Global.update({
-    id: 1,
-    data: ({ current }) => ({
-      totalSubscriptions: current.totalSubscriptions + delta,
-    }),
-  });
+  const global = await context.db.find(Global, { id: 1 });
+  if (global) {
+    await context.db.update(Global, { id: 1 }).set({
+      totalSubscriptions: (global.totalSubscriptions ?? 0) + delta,
+    });
+  }
 });
 
 ponder.on("BasePaintSubscription:TransferBatch", async ({ event, context }) => {
-  await trackBalance(context.contracts.BasePaintSubscription.address, event, context);
-
-  const { Global } = context.db;
+  // Track balance changes
+  await trackBalance("0x75CF063a65d361527180805b244bC51c1deAb075", event, context);
 
   let delta = 0;
 
@@ -43,10 +42,10 @@ ponder.on("BasePaintSubscription:TransferBatch", async ({ event, context }) => {
     return;
   }
 
-  await Global.update({
-    id: 1,
-    data: ({ current }) => ({
-      totalSubscriptions: current.totalSubscriptions + delta,
-    }),
-  });
+  const global = await context.db.find(Global, { id: 1 });
+  if (global) {
+    await context.db.update(Global, { id: 1 }).set({
+      totalSubscriptions: (global.totalSubscriptions ?? 0) + delta,
+    });
+  }
 });
