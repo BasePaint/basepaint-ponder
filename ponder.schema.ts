@@ -21,6 +21,7 @@ export const Account = onchainTable("account", (t) => ({
   streak: t.integer().notNull(),
   longestStreak: t.integer().notNull(),
   lastPaintedDay: t.integer(),
+  totalDaysPainted: t.integer().notNull().default(0),
 }));
 
 export const AccountRelations = relations(Account, ({ many }) => ({

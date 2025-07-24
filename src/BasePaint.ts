@@ -130,11 +130,14 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
       streak = 1;
     }
 
+    const canvasIncrement = contribution === null ? 1 : 0;
+
     await context.db.update(Account, { id: event.args.author }).set({
       streak,
       longestStreak: Math.max(account.longestStreak ?? 0, streak),
       lastPaintedDay: day,
       totalPixels: (account.totalPixels ?? 0) + pixelsContributed,
+      totalDaysPainted: account.totalDaysPainted + canvasIncrement,
     });
   }
 
