@@ -1,4 +1,4 @@
-import { onchainTable, index, relations } from "ponder";
+import { onchainTable, index, relations, primaryKey } from "ponder";
 
 export const Global = onchainTable("global", (t) => ({
   id: t.integer().primaryKey(),
@@ -56,12 +56,18 @@ export const BrushRelations = relations(Brush, ({ one, many }) => ({
   strokes: many(Stroke),
 }));
 
-export const Contribution = onchainTable("contribution", (t) => ({
-  id: t.text().primaryKey(),
-  accountId: t.text().notNull(),
-  canvasId: t.integer().notNull(),
-  pixelsCount: t.integer().notNull(),
-}));
+export const Contribution = onchainTable(
+  "contribution",
+  (t) => ({
+    id: t.text().notNull(),
+    accountId: t.text().notNull(),
+    canvasId: t.integer().notNull(),
+    pixelsCount: t.integer().notNull(),
+  }),
+  (table) => ({
+    pk: primaryKey({ columns: [table.canvasId, table.accountId] }),
+  })
+);
 
 export const ContributionRelations = relations(Contribution, ({ one }) => ({
   account: one(Account, { fields: [Contribution.accountId], references: [Account.id] }),

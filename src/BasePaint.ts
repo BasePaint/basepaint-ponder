@@ -110,13 +110,13 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
   }
 
   const contributionId = `${event.args.day}_${event.args.author}`;
-  const contribution = await context.db.find(Contribution, { id: contributionId });
+  const contributionKey = { canvasId: day, accountId: event.args.author };
+  const contribution = await context.db.find(Contribution, contributionKey);
   await context.db
     .insert(Contribution)
     .values({
       id: contributionId,
-      canvasId: day,
-      accountId: event.args.author,
+      ...contributionKey,
       pixelsCount: pixelsContributed,
     })
     .onConflictDoUpdate((row) => ({
