@@ -2,9 +2,8 @@
 
 echo "Starting indexer with GIT_SHA: $GIT_SHA"
 
-# Fail if no GIT_SHA is set
-if [ -z "$GIT_SHA" ]; then
-  echo "GIT_SHA is not set"
+if [[ ! "$GIT_SHA" =~ ^[0-9a-fA-F]{10,64}$ ]]; then
+  echo "GIT_SHA must be a hex commit SHA, 10 to 64 characters"
   exit 1
 fi
 
