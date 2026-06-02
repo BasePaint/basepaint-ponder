@@ -1,5 +1,7 @@
 FROM node:21
 
+ARG GIT_SHA=unknown
+
 WORKDIR /app
 
 COPY package*.json ./
@@ -12,6 +14,9 @@ EXPOSE 42069
 
 ENV NODE_ENV=production
 ENV PONDER_TELEMETRY_DISABLED=true
+ENV GIT_SHA=${GIT_SHA}
+
+LABEL org.opencontainers.image.revision=${GIT_SHA}
 
 CMD [ "scripts/indexer.sh" ]
 
