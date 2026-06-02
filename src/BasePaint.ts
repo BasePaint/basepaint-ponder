@@ -1,7 +1,36 @@
-import { ponder } from "ponder:registry";
+import { ponder, type Context } from "ponder:registry";
 import { Global, Canvas, Brush, Contribution, Account, Usage, Stroke, Withdrawal } from "ponder:schema";
 import { eq } from "ponder";
+import { ChainlinkEthUsdPriceFeedAbi } from "../abis/ChainlinkEthUsdPriceFeedAbi";
 import { trackBalance } from "./utils";
+
+const ETH_USD_PRICE_FEED = "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70";
+const WEI_PER_ETH = 10n ** 18n;
+
+async function getEthUsdPriceAtStart8(context: Context<"BasePaint:Painted">, day: number, blockNumber: bigint) {
+  try {
+    const [, answer] = await context.client.readContract({
+      abi: ChainlinkEthUsdPriceFeedAbi,
+      address: ETH_USD_PRICE_FEED,
+      functionName: "latestRoundData",
+      blockNumber,
+    });
+
+    if (answer > 0n) {
+      return answer;
+    }
+
+    console.warn(`Invalid ETH/USD price answer ${answer}; using fallback price`);
+  } catch (error) {
+    console.warn("Failed to fetch ETH/USD price; using fallback price", error);
+  }
+
+  const previousDayCanvas = await context.db.find(Canvas, { id: day - 1 });
+  const fallbackPrice8 = previousDayCanvas?.ethUsdPriceAtStart8 ?? 0n;
+  console.warn(`Using fallback ETH/USD price ${fallbackPrice8} for canvas ${day}`);
+
+  return fallbackPrice8;
+}
 
 ponder.on("BasePaint:setup", async ({ context }) => {
   await context.db.insert(Global).values({
@@ -11,6 +40,7 @@ ponder.on("BasePaint:setup", async ({ context }) => {
     totalArtists: 0,
     totalPixels: 0,
     totalEarnings: 0n,
+    totalEarningsUsd8: 0n,
     totalWithdrawals: 0n,
     totalMints: 0,
     totalBurns: 0,
@@ -53,7 +83,10 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
     });
   }
 
-  const canvas = await context.db.find(Canvas, { id: Number(event.args.day) });
+  const canvas = await context.db.find(Canvas, { id: day });
+  const ethUsdPriceAtStart8 = canvas
+    ? canvas.ethUsdPriceAtStart8
+    : await getEthUsdPriceAtStart8(context, day, event.block.number);
   if (!canvas) {
     const previousCanvas = await context.db.find(Canvas, { id: Number(event.args.day) - 2 });
     if (previousCanvas) {
@@ -97,6 +130,8 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
       totalMints: 0,
       totalBurns: 0,
       totalEarned: 0n,
+      totalEarnedUsd8: 0n,
+      ethUsdPriceAtStart8,
       pixelsCount: pixelsContributed,
       totalArtists: 1,
     })
@@ -160,9 +195,14 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
 
 ponder.on("BasePaint:ArtistsEarned", async ({ event, context }) => {
   const canvas = await context.db.find(Canvas, { id: Number(event.args.day) });
+  let earnedUsd8 = 0n;
   if (canvas) {
+    const totalEarned = (canvas.totalEarned ?? 0n) + event.args.amount;
+    earnedUsd8 = (event.args.amount * canvas.ethUsdPriceAtStart8) / WEI_PER_ETH;
+
     await context.db.update(Canvas, { id: Number(event.args.day) }).set({
-      totalEarned: (canvas.totalEarned ?? 0n) + event.args.amount,
+      totalEarned,
+      totalEarnedUsd8: (canvas.totalEarnedUsd8 ?? 0n) + earnedUsd8,
     });
   }
 
@@ -170,6 +210,7 @@ ponder.on("BasePaint:ArtistsEarned", async ({ event, context }) => {
   if (global) {
     await context.db.update(Global, { id: 1 }).set({
       totalEarnings: (global.totalEarnings ?? 0n) + event.args.amount,
+      totalEarningsUsd8: (global.totalEarningsUsd8 ?? 0n) + earnedUsd8,
     });
   }
 });
