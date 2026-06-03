@@ -10,6 +10,10 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: docker-publish-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -30,15 +34,20 @@ jobs:
           owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "latest=ghcr.io/$owner/${{ github.event.repository.name }}:latest" >> "$GITHUB_ENV"
           echo "sha=ghcr.io/$owner/${{ github.event.repository.name }}:${{ github.sha }}" >> "$GITHUB_ENV"
+          echo "cache=ghcr.io/$owner/${{ github.event.repository.name }}:buildcache" >> "$GITHUB_ENV"
 
-      - name: Build Docker image
-        run: |
-          docker build \
-            --build-arg GIT_SHA="${{ github.sha }}" \
-            -t "${{ env.latest }}" \
-            -t "${{ env.sha }}" .
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
 
-      - name: Push Docker image
-        run: |
-          docker push "${{ env.latest }}"
-          docker push "${{ env.sha }}"
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.latest }}
+            ${{ env.sha }}
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.cache }}
+          cache-to: type=registry,ref=${{ env.cache }},mode=max
