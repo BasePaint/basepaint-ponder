@@ -26,6 +26,7 @@ services:
       - GITHUB_SHA
       - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/basepaint_ponder
       - NODE_OPTIONS=--max_old_space_size=4096
+      - PONDER_CACHE_BYTES=2147483648
     logging:
       driver: "json-file"
       options:
