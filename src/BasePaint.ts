@@ -65,7 +65,15 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
   const day = Number(event.args.day);
   const pixelsContributed = Math.floor((event.args.pixels.length - 2) / 6);
 
-  const brush = await context.db.find(Brush, { id: Number(event.args.tokenId) });
+  const contributionKey = { canvasId: day, accountId: event.args.author };
+  const [global, account, brush, canvas, contribution] = await Promise.all([
+    context.db.find(Global, { id: 1 }),
+    context.db.find(Account, { id: event.args.author }),
+    context.db.find(Brush, { id: Number(event.args.tokenId) }),
+    context.db.find(Canvas, { id: day }),
+    context.db.find(Contribution, contributionKey),
+  ]);
+
   if (brush) {
     let streak = brush.streak ?? 0;
 
@@ -83,7 +91,6 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
     });
   }
 
-  const canvas = await context.db.find(Canvas, { id: day });
   const ethUsdPriceAtStart8 = canvas
     ? canvas.ethUsdPriceAtStart8
     : await getEthUsdPriceAtStart8(context, day, event.block.number);
@@ -110,8 +117,6 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
   }
 
   const contributionId = `${event.args.day}_${event.args.author}`;
-  const contributionKey = { canvasId: day, accountId: event.args.author };
-  const contribution = await context.db.find(Contribution, contributionKey);
   await context.db
     .insert(Contribution)
     .values({
@@ -153,7 +158,6 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
       pixelsCount: (row.pixelsCount ?? 0) + pixelsContributed,
     }));
 
-  const account = await context.db.find(Account, { id: event.args.author });
   if (account) {
     let streak = account.streak ?? 0;
 
@@ -187,7 +191,6 @@ ponder.on("BasePaint:Painted", async ({ event, context }) => {
     timestamp: Number(event.block.timestamp),
   });
 
-  const global = await context.db.find(Global, { id: 1 });
   if (global) {
     await context.db.update(Global, { id: 1 }).set({
       totalPixels: (global.totalPixels ?? 0) + pixelsContributed,
