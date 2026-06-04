@@ -2,5 +2,7 @@ node_modules/
 .ponder/
 generated/
 .env*
+tmp/
+artifacts/
 docker-compose*
 .github

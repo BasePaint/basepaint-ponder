@@ -1,28 +1,31 @@
 import { ponder } from "ponder:registry";
 import { Brush, Account } from "ponder:schema";
 import { trackBalance } from "./utils";
+import { checksumAddress } from "./address";
 
 ponder.on("BasePaintBrush:Transfer", async ({ event, context }) => {
   // Track balance changes
   await trackBalance("0xD68fe5b53e7E1AbeB5A4d0A6660667791f39263a", event, context);
 
+  const owner = checksumAddress(event.args.to);
+
   await context.db
     .insert(Brush)
     .values({
       id: Number(event.args.tokenId),
-      ownerId: event.args.to,
+      ownerId: owner,
       strength: 0,
       streak: 0,
       mintedTimestamp: Number(event.block.timestamp),
     })
     .onConflictDoUpdate((row) => ({
-      ownerId: event.args.to,
+      ownerId: owner,
     }));
 
   await context.db
     .insert(Account)
     .values({
-      id: event.args.to,
+      id: owner,
       totalPixels: 0,
       totalWithdrawn: 0n,
       totalEarned: 0n,

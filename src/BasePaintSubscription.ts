@@ -1,6 +1,7 @@
 import { ponder } from "ponder:registry";
 import { Global } from "ponder:schema";
 import { trackBalance } from "./utils";
+import { isZeroAddress } from "./address";
 
 ponder.on("BasePaintSubscription:TransferSingle", async ({ event, context }) => {
   // Track balance changes
@@ -8,9 +9,9 @@ ponder.on("BasePaintSubscription:TransferSingle", async ({ event, context }) => 
 
   let delta = 0;
 
-  if (BigInt(event.args.from) === 0n) {
+  if (isZeroAddress(event.args.from)) {
     delta = Number(event.args.value);
-  } else if (BigInt(event.args.to) === 0n) {
+  } else if (isZeroAddress(event.args.to)) {
     delta = -Number(event.args.value);
   }
 
@@ -32,9 +33,9 @@ ponder.on("BasePaintSubscription:TransferBatch", async ({ event, context }) => {
 
   let delta = 0;
 
-  if (BigInt(event.args.from) === 0n) {
+  if (isZeroAddress(event.args.from)) {
     delta = Number(event.args.values.reduce((a, b) => a + Number(b), 0));
-  } else if (BigInt(event.args.to) === 0n) {
+  } else if (isZeroAddress(event.args.to)) {
     delta = -Number(event.args.values.reduce((a, b) => a + Number(b), 0));
   }
 

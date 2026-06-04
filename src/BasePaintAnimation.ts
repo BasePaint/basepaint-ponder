@@ -1,12 +1,13 @@
 import { ponder } from "ponder:registry";
 import { Animation, Canvas, Global } from "ponder:schema";
 import { trackBalance } from "./utils";
+import { isZeroAddress } from "./address";
 
 ponder.on("BasePaintAnimation:TransferSingle", async ({ event, context }) => {
   // Track balance changes
   await trackBalance("0xC59F475122e914aFCf31C0a9E0A2274666135e4E", event, context);
 
-  if (BigInt(event.args.from) === 0n) {
+  if (isZeroAddress(event.args.from)) {
     const count = Number(event.args.value);
 
     await context.db
@@ -39,7 +40,7 @@ ponder.on("BasePaintAnimation:TransferBatch", async ({ event, context }) => {
   // Track balance changes
   await trackBalance("0xC59F475122e914aFCf31C0a9E0A2274666135e4E", event, context);
 
-  if (BigInt(event.args.from) === 0n) {
+  if (isZeroAddress(event.args.from)) {
     for (let i = 0; i < event.args.ids.length; i++) {
       const id = event.args.ids[i];
       const count = Number(event.args.values[i]);

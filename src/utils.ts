@@ -1,22 +1,27 @@
 import { Context, Event } from "ponder:registry";
 import { Balance, TotalBalance } from "ponder:schema";
+import { checksumAddress, isZeroAddress } from "./address";
 
 export async function trackBalance(contract: string, event: Event, context: Context) {
+  const contractId = checksumAddress(contract);
+
   // Determine event type based on event structure
   if ("tokenId" in event.args && "from" in event.args && "to" in event.args) {
     // Handle ERC721 transfers
     const tokenId = event.args.tokenId;
-    const fromId = `${contract}_${event.args.from}_${tokenId}`;
-    const toId = `${contract}_${event.args.to}_${tokenId}`;
+    const from = checksumAddress(event.args.from);
+    const to = checksumAddress(event.args.to);
+    const fromId = `${contractId}_${from}_${tokenId}`;
+    const toId = `${contractId}_${to}_${tokenId}`;
     const value = 1; // ERC721 tokens have value of 1
 
-    if (BigInt(event.args.from) !== 0n) {
+    if (!isZeroAddress(from)) {
       await context.db
         .insert(Balance)
         .values({
           id: fromId,
-          ownerId: event.args.from,
-          contract,
+          ownerId: from,
+          contract: contractId,
           tokenId,
           value: -value,
         })
@@ -25,13 +30,13 @@ export async function trackBalance(contract: string, event: Event, context: Cont
         }));
     }
 
-    if (BigInt(event.args.to) !== 0n) {
+    if (!isZeroAddress(to)) {
       await context.db
         .insert(Balance)
         .values({
           id: toId,
-          ownerId: event.args.to,
-          contract,
+          ownerId: to,
+          contract: contractId,
           tokenId,
           value,
         })
@@ -40,13 +45,13 @@ export async function trackBalance(contract: string, event: Event, context: Cont
         }));
     }
 
-    if (BigInt(event.args.from) !== 0n) {
+    if (!isZeroAddress(from)) {
       await context.db
         .insert(TotalBalance)
         .values({
-          id: `${contract}_${event.args.from}`,
-          ownerId: event.args.from,
-          contract,
+          id: `${contractId}_${from}`,
+          ownerId: from,
+          contract: contractId,
           value: -value,
         })
         .onConflictDoUpdate((row) => ({
@@ -54,13 +59,13 @@ export async function trackBalance(contract: string, event: Event, context: Cont
         }));
     }
 
-    if (BigInt(event.args.to) !== 0n) {
+    if (!isZeroAddress(to)) {
       await context.db
         .insert(TotalBalance)
         .values({
-          id: `${contract}_${event.args.to}`,
-          ownerId: event.args.to,
-          contract,
+          id: `${contractId}_${to}`,
+          ownerId: to,
+          contract: contractId,
           value,
         })
         .onConflictDoUpdate((row) => ({
@@ -69,17 +74,19 @@ export async function trackBalance(contract: string, event: Event, context: Cont
     }
   } else if ("id" in event.args && "value" in event.args && "from" in event.args && "to" in event.args) {
     // Handle ERC1155 single transfers
-    const fromId = `${contract}_${event.args.from}_${event.args.id}`;
-    const toId = `${contract}_${event.args.to}_${event.args.id}`;
+    const from = checksumAddress(event.args.from);
+    const to = checksumAddress(event.args.to);
+    const fromId = `${contractId}_${from}_${event.args.id}`;
+    const toId = `${contractId}_${to}_${event.args.id}`;
     const value = Number(event.args.value);
 
-    if (BigInt(event.args.from) !== 0n) {
+    if (!isZeroAddress(from)) {
       await context.db
         .insert(Balance)
         .values({
           id: fromId,
-          ownerId: event.args.from,
-          contract,
+          ownerId: from,
+          contract: contractId,
           tokenId: event.args.id,
           value: -value,
         })
@@ -88,13 +95,13 @@ export async function trackBalance(contract: string, event: Event, context: Cont
         }));
     }
 
-    if (BigInt(event.args.to) !== 0n) {
+    if (!isZeroAddress(to)) {
       await context.db
         .insert(Balance)
         .values({
           id: toId,
-          ownerId: event.args.to,
-          contract,
+          ownerId: to,
+          contract: contractId,
           tokenId: event.args.id,
           value,
         })
@@ -103,13 +110,13 @@ export async function trackBalance(contract: string, event: Event, context: Cont
         }));
     }
 
-    if (BigInt(event.args.from) !== 0n) {
+    if (!isZeroAddress(from)) {
       await context.db
         .insert(TotalBalance)
         .values({
-          id: `${contract}_${event.args.from}`,
-          ownerId: event.args.from,
-          contract,
+          id: `${contractId}_${from}`,
+          ownerId: from,
+          contract: contractId,
           value: -value,
         })
         .onConflictDoUpdate((row) => ({
@@ -117,13 +124,13 @@ export async function trackBalance(contract: string, event: Event, context: Cont
         }));
     }
 
-    if (BigInt(event.args.to) !== 0n) {
+    if (!isZeroAddress(to)) {
       await context.db
         .insert(TotalBalance)
         .values({
-          id: `${contract}_${event.args.to}`,
-          ownerId: event.args.to,
-          contract,
+          id: `${contractId}_${to}`,
+          ownerId: to,
+          contract: contractId,
           value,
         })
         .onConflictDoUpdate((row) => ({
@@ -132,19 +139,24 @@ export async function trackBalance(contract: string, event: Event, context: Cont
     }
   } else if ("ids" in event.args && "values" in event.args && "from" in event.args && "to" in event.args) {
     // Handle ERC1155 batch transfers
+    const from = checksumAddress(event.args.from);
+    const to = checksumAddress(event.args.to);
+    const fromIsZero = isZeroAddress(from);
+    const toIsZero = isZeroAddress(to);
+
     for (let i = 0; i < event.args.ids.length; i++) {
       const id = event.args.ids[i]!;
       const value = Number(event.args.values[i]);
-      const fromId = `${contract}_${event.args.from}_${id}`;
-      const toId = `${contract}_${event.args.to}_${id}`;
+      const fromId = `${contractId}_${from}_${id}`;
+      const toId = `${contractId}_${to}_${id}`;
 
-      if (BigInt(event.args.from) !== 0n) {
+      if (!fromIsZero) {
         await context.db
           .insert(Balance)
           .values({
             id: fromId,
-            ownerId: event.args.from,
-            contract,
+            ownerId: from,
+            contract: contractId,
             tokenId: id,
             value: -value,
           })
@@ -153,13 +165,13 @@ export async function trackBalance(contract: string, event: Event, context: Cont
           }));
       }
 
-      if (BigInt(event.args.to) !== 0n) {
+      if (!toIsZero) {
         await context.db
           .insert(Balance)
           .values({
             id: toId,
-            ownerId: event.args.to,
-            contract,
+            ownerId: to,
+            contract: contractId,
             tokenId: id,
             value,
           })
@@ -168,13 +180,13 @@ export async function trackBalance(contract: string, event: Event, context: Cont
           }));
       }
 
-      if (BigInt(event.args.from) !== 0n) {
+      if (!fromIsZero) {
         await context.db
           .insert(TotalBalance)
           .values({
-            id: `${contract}_${event.args.from}`,
-            ownerId: event.args.from,
-            contract,
+            id: `${contractId}_${from}`,
+            ownerId: from,
+            contract: contractId,
             value: -value,
           })
           .onConflictDoUpdate((row) => ({
@@ -182,13 +194,13 @@ export async function trackBalance(contract: string, event: Event, context: Cont
           }));
       }
 
-      if (BigInt(event.args.to) !== 0n) {
+      if (!toIsZero) {
         await context.db
           .insert(TotalBalance)
           .values({
-            id: `${contract}_${event.args.to}`,
-            ownerId: event.args.to,
-            contract,
+            id: `${contractId}_${to}`,
+            ownerId: to,
+            contract: contractId,
             value,
           })
           .onConflictDoUpdate((row) => ({
