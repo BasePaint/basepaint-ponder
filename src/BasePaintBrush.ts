@@ -1,20 +1,36 @@
 import { ponder } from "ponder:registry";
 import { Brush, Account } from "ponder:schema";
 import { trackBalance } from "./utils";
-import { checksumAddress } from "./address";
+import { checksumAddress, isZeroAddress } from "./address";
+import { BASE_PAINT_BRUSH_EVENTS_DEPLOYED_BLOCK } from "../constants";
 
 ponder.on("BasePaintBrush:Transfer", async ({ event, context }) => {
   // Track balance changes
   await trackBalance("0xD68fe5b53e7E1AbeB5A4d0A6660667791f39263a", event, context);
 
+  const tokenId = Number(event.args.tokenId);
   const owner = checksumAddress(event.args.to);
+  const shouldIndexMintStrength =
+    isZeroAddress(event.args.from) &&
+    event.block.number >= BigInt(BASE_PAINT_BRUSH_EVENTS_DEPLOYED_BLOCK);
+  const strength = shouldIndexMintStrength
+    ? Number(
+        await context.client.readContract({
+          abi: context.contracts.BasePaintBrush.abi,
+          address: context.contracts.BasePaintBrush.address,
+          functionName: "strengths",
+          args: [event.args.tokenId],
+          blockNumber: event.block.number,
+        })
+      )
+    : 0;
 
   await context.db
     .insert(Brush)
     .values({
-      id: Number(event.args.tokenId),
+      id: tokenId,
       ownerId: owner,
-      strength: 0,
+      strength,
       streak: 0,
       mintedTimestamp: Number(event.block.timestamp),
     })

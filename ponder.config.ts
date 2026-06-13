@@ -8,6 +8,7 @@ import { BasePaintWIPAbi } from "./abis/BasePaintWIPAbi";
 import { BasePaintAnimationAbi } from "./abis/BasePaintAnimationAbi";
 import { BasePaintMetadataRegistryAbi } from "./abis/BasePaintMetadataRegistry";
 import { BasePaintSubscriptionAbi } from "./abis/BasePaintSubscriptionAbi";
+import { BASE_PAINT_BRUSH_EVENTS_DEPLOYED_BLOCK } from "./constants";
 
 const { PONDER_RPC_URLS_8453 } = process.env;
 
@@ -38,7 +39,7 @@ export default createConfig({
       abi: BasePaintBrushEventsAbi,
       address: "0xb152f48F207d9D1C30Ff60d46E8cb8c1a5d00dEC",
       chain: "base",
-      startBlock: 15849605,
+      startBlock: BASE_PAINT_BRUSH_EVENTS_DEPLOYED_BLOCK,
     },
     BasePaintWIP: {
       abi: BasePaintWIPAbi,
