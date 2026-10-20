@@ -74,10 +74,10 @@ jobs:
       - name: Deploy
         if: github.ref == 'refs/heads/main'
         env:
-          DEPLOY_URLS: ${{ vars.EASYPANEL_DEPLOY_WEBHOOKS }}
+          DEPLOY_URLS: ${{ secrets.EASYPANEL_DEPLOY_WEBHOOKS }}
         run: |
           failed=0
-          for url in $DEPLOY_URLS; do
+          for url in ${DEPLOY_URLS//$'\r'/}; do
             curl -fsS --max-time 60 "$url" >/dev/null || failed=1
           done
           exit "$failed"
