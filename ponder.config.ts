@@ -10,15 +10,20 @@ import { BasePaintMetadataRegistryAbi } from "./abis/BasePaintMetadataRegistry";
 import { BasePaintSubscriptionAbi } from "./abis/BasePaintSubscriptionAbi";
 import { BASE_PAINT_BRUSH_EVENTS_DEPLOYED_BLOCK } from "./constants";
 
-const { PONDER_RPC_URLS_8453 } = process.env;
+const { PONDER_RPC_URLS_8453, PONDER_POLLING_INTERVAL_MS_8453 } = process.env;
+
+// Default matches Base's 2s block time; Ponder's 1s default makes half of the polls return nothing new.
+const pollingInterval = Number(PONDER_POLLING_INTERVAL_MS_8453 || 2_000);
+if (!Number.isFinite(pollingInterval)) {
+  throw new Error(`Invalid PONDER_POLLING_INTERVAL_MS_8453: ${PONDER_POLLING_INTERVAL_MS_8453}`);
+}
 
 export default createConfig({
   chains: {
     base: {
       id: 8453,
       rpc: fallback(PONDER_RPC_URLS_8453!.split(",").map((url) => http(url.trim()))),
-      // Match Base's 2s block time; the 1s default makes half of the polls return nothing new.
-      pollingInterval: 2_000,
+      pollingInterval,
     },
   },
   database: {
