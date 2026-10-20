@@ -1,13 +1,10 @@
 #!/bin/bash
 
-echo "Starting indexer with GIT_SHA: $GIT_SHA"
+# Bump to reindex into a fresh schema. Needed when contracts, ponder.schema.ts or src/ change.
+SCHEMA_VERSION="302f2e1ac8"
 
-if [[ ! "$GIT_SHA" =~ ^[0-9a-fA-F]{10,64}$ ]]; then
-  echo "GIT_SHA must be a hex commit SHA, 10 to 64 characters"
-  exit 1
-fi
+echo "Starting indexer with GIT_SHA: $GIT_SHA, schema version: $SCHEMA_VERSION"
 
-# Schema name starts with git_ and 10 characters of the GIT_SHA
-export DATABASE_SCHEMA="git_${GIT_SHA:0:10}"
+export DATABASE_SCHEMA="git_${SCHEMA_VERSION}"
 
 exec npm run start -- --views-schema=public
