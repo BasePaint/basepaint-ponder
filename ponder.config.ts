@@ -17,6 +17,8 @@ export default createConfig({
     base: {
       id: 8453,
       rpc: fallback(PONDER_RPC_URLS_8453!.split(",").map((url) => http(url.trim()))),
+      // Base produces a block every 2s; the 1s default doubles block requests for no new data.
+      pollingInterval: 4_000,
     },
   },
   database: {
