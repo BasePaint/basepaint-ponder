@@ -10,6 +10,8 @@ This is the source code of the data backend used by https://basepaint.xyz/
 
 ## Deploying
 
+Deploys reuse the existing index. To reindex, bump `SCHEMA_VERSION` in `scripts/indexer.sh`; it must change whenever contracts, `ponder.schema.ts`, `src/`, `abis/` or `constants.ts` change. Ponder refuses to start if indexing code changed without a bump, but it doesn't notice changes in `abis/` or `constants.ts`.
+
 Build and push new image
 
 ```
