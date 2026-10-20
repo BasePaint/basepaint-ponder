@@ -23,6 +23,8 @@ services:
     restart: unless-stopped
     environment:
       - PONDER_RPC_URLS_8453
+      - PONDER_POLLING_INTERVAL_MS
+      - PONDER_RPC_TIMEOUT_MS
       - GITHUB_SHA
       - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/basepaint_ponder
       - NODE_OPTIONS=--max_old_space_size=4096

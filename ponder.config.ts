@@ -10,13 +10,16 @@ import { BasePaintMetadataRegistryAbi } from "./abis/BasePaintMetadataRegistry";
 import { BasePaintSubscriptionAbi } from "./abis/BasePaintSubscriptionAbi";
 import { BASE_PAINT_BRUSH_EVENTS_DEPLOYED_BLOCK } from "./constants";
 
-const { PONDER_RPC_URLS_8453 } = process.env;
+const { PONDER_RPC_URLS_8453, PONDER_POLLING_INTERVAL_MS = "2000", PONDER_RPC_TIMEOUT_MS = "3000" } = process.env;
 
 export default createConfig({
   chains: {
     base: {
       id: 8453,
-      rpc: fallback(PONDER_RPC_URLS_8453!.split(",").map((url) => http(url.trim()))),
+      rpc: fallback(
+        PONDER_RPC_URLS_8453!.split(",").map((url) => http(url.trim(), { timeout: Number(PONDER_RPC_TIMEOUT_MS) })),
+      ),
+      pollingInterval: Number(PONDER_POLLING_INTERVAL_MS),
     },
   },
   database: {
