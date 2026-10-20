@@ -1,6 +1,10 @@
+import { readFile } from "node:fs/promises";
+
 async function healthcheck() {
   const port = process.env.PORT || 42069;
-  const url = `http://localhost:${port}/ready`;
+  // `ponder serve` only needs to be up; /ready reflects the indexer and would pull the API out of rotation.
+  const isServer = (await readFile("/proc/1/cmdline", "utf8").catch(() => "")).includes("serve");
+  const url = `http://localhost:${port}/${isServer ? "health" : "ready"}`;
   console.log(`Checking ${url}`);
   const response = await fetch(url);
   if (!response.ok) {
