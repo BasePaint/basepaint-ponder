@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-FROM node:21
+FROM node:24.22.1
 
 ARG GIT_SHA=unknown
 
