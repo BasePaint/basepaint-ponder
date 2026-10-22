@@ -6,3 +6,4 @@ tmp/
 artifacts/
 docker-compose*
 .github
+rust/
